@@ -6,11 +6,25 @@
 ###########################################################################################################################################################################
 import pandas as pd
 import matplotlib.pyplot as plt
+import unicodedata
+from nltk import word_tokenize
+from nltk.stem.porter import PorterStemmer
+import re
+from nltk.corpus import stopwords
+from nltk import WordNetLemmatizer, LancasterStemmer
+import emoji
+import inflect as inflect
+import nltk
+from sklearn.feature_extraction.text import TfidfVectorizer
+
+
 
 ###########################################################################################################################################################################
 #########################################################           MÉTODOS           ###############################################################
 ###########################################################################################################################################################################
-def barPlotInstanciasPorClase(y_train):
+def barPlotInstanciasPorClase(dfTweetsData):
+    # re-arrange:  y:class and x:features
+    y_train = dfTweetsData['label'].copy()
     # num samples per class
     value_counts = y_train.value_counts()
     # Ordenar los valores y etiquetas por valor descendente
@@ -34,26 +48,158 @@ def barPlotInstanciasPorClase(y_train):
     plt.show()
 
 
+
+
 def analisisDeDato(tweets):  ##david
     #Comprobar si hay valores faltantes, calcular máximo, medio, mínimo, intancias repetidas, número y tipo de atributos y rango de valores.
     #Precondición: Dado el conjunto de datos ya leido y leido en pandas.
     #Postcondición: imprime mensajes avisando de valores faltantes... y en caso de haberlos solucionandolos o borrando o añadiendo con la media...
     print(tweets[(tweets['label']=="no")].head(5))
     print(tweets[(tweets['label']=="si")].head(5))
+    print()
+    print("Las instancias están repartidas en las dos clases de la siguiente forma:")
+    print(dfTweetsData['label'].value_counts(), end="\n")
+    print()
 
-    
 
-def preproceso():    ##david
-    #Hay que cambiar los mensajes para quitar mayusculas, stop words, lematización....
-    #Precondición: Dada la lista de mensajes
-    #Postcondición: Procesarlos quitando las stop words, pasando a minúsculas, lematizando, tokenizacion....
+
+###################################################################### PREPROCESO #############################################################
+def remove_non_ascii(word):
+    """Se eliminan todas las palabras que no este en formato ascii"""
+    new_words = []
+    new_word = unicodedata.normalize('NFKD', word).encode('ascii', 'ignore').decode('utf-8', 'ignore')
+    new_words.append(new_word)
+    return new_words
+
+
+def to_lowercase(words):
+    """Todas las letras se transforman en minuscula"""
+    new_words = []
+    for word in words:
+        new_word = word.lower()
+        new_words.append(new_word)
+    return new_words
+
+
+def remove_punctuation(words):
+    """Se borra la puntuacion de las palabras"""
+    new_words = []
+    for word in words:
+        new_word = re.sub(r'[^\w\s]', '', word)
+        if new_word != '':
+            new_words.append(new_word)
+    return new_words
+
+
+def replace_numbers(words):
+    """Se convierten los numeros en su representacion con palabras"""
+    p = inflect.engine()
+    new_words = []
+    for word in words:
+        if word.isdigit():
+            new_word = p.number_to_words(word)
+            new_words.append(new_word)
+        else:
+            new_words.append(word)
+    return new_words
+
+
+def remove_stopwords(words):
+    """Se eliminan las stopwords"""
+    stop_words = set(stopwords.words('english'))
+    new_words = []
+    for word in words:
+        if word not in stop_words:
+            new_words.append(word)
+    return new_words
+
+
+def stem_words(words):
+    """Stem words in list of tokenized words"""
+    stemmer = LancasterStemmer()
+    stems = []
+    for word in words:
+        stem = stemmer.stem(word)
+        stems.append(stem)
+    return stems
+
+
+def lemmatize_verbs(words):
+    """Lemmatize verbs in list of tokenized words"""
+    lemmatizer = WordNetLemmatizer()
+    lemmas = []
+    for word in words:
+        lemma = lemmatizer.lemmatize(word, pos='v')
+        lemmas.append(lemma)
+    return lemmas
+
+
+def preprocesado(df_train):
+    tweets = df_train['tweet'].values.tolist()
+    print(tweets[0])
+    labels = df_train['label'].values
+
+    preprocessed_tweets = []
+    for tweet in tweets:
+        words = emoji.demojize(tweet, delimiters=("", ""))
+        print("emoji")
+        words = remove_non_ascii(words)
+        print("ascii")
+        words = to_lowercase(words)
+        print("a minúsculas")
+        words = remove_punctuation(words)
+        print("sin signos de puntuación")
+        words = replace_numbers(words)
+        print("sin números")
+        words = remove_stopwords(words)
+        print("sin stopwords")
+        words = lemmatize_verbs(words)
+        print("lematizados")
+        words = stem_words(words)
+        preprocessed_tweets.append(words)
+    return labels, preprocessed_tweets
+
+
+
+
+
+
+
+##################################################################### VECTORIZACION ###############################################################
+
+def bow ():
     pass
 
-def vectorizacion():   #david
+def tfidf(processed_features):
+    vectorizer = TfidfVectorizer(lowercase=False, max_features=1600, min_df=10, max_df=0.8,
+                                 stop_words=stopwords.words('english'))
+    processed_features = vectorizer.fit_transform(processed_features).toarray()
+    return processed_features, vectorizer
+
+def wordEmbeddings():
+    pass
+
+
+def vectorizacion(tweets, opc):   #david
     #Hay que vectorizar el conjunto de datos de tal forma que los mensjes de twitter para que la información de los mensajes se pueda contar y sea lo más representativa posible
     #Precondición: La lista de mensajes ya procesada
     #Postcondición: Una lista con las palabras mas representativas y el numero de apariciones o lo que sea usando tf-idf, bow o embedding.
-    pass
+    if (opc == "tf-idf") :
+        processed_features, vector = tfidf(tweets)
+        return processed_features, vector
+
+    elif (opc == "bow") :
+        bow(tweets)
+    elif (opc == "word-embedding"):
+        wordEmbeddings(tweets)
+    else:
+        raise ValueError("Se ha escogido una opción que no existe")
+
+
+
+
+
+
 def redimensionar():     #albert
     ##comprobar que numero de dimensiones es mejor para esta practica, cual ofrece más información o si se pierde al redimensionar.
     #Precondición: Recibe los mensajes vectorizados
@@ -88,6 +234,14 @@ def clasificarInstancia():      ##bermudez
     pass
 
 
+
+
+
+
+
+
+
+
 ###########################################################################################################################################################################
 #########################################################           Inicialización         ###############################################################
 ###########################################################################################################################################################################
@@ -98,15 +252,17 @@ if __name__=="__main__":
     # Mapear los valores en la columna 'label'
     dfTweetsData['label'] = dfTweetsData['label'].map({0: 'no', 1: 'si'})
 
-    print("Las instancias están repartidas en las dos clases de la siguiente forma:")
-    print(dfTweetsData['label'].value_counts(), end="\n")
-    print()
     # to check out what we are going to be working with
     #dfTweetsData.info()
 
-    '''
-    # re-arrange:  y:class and x:features
-    y_train = dfTweetsData['label'].copy()
-    dfTweetsData.drop('label', axis=1, inplace=True)
-    '''
-    analisisDeDato(dfTweetsData)
+    barPlotInstanciasPorClase(dfTweetsData)
+
+    #analisisDeDato(dfTweetsData)
+
+
+    labels, tweets = preprocesado(dfTweetsData)
+
+    opcion = "tf-idf"
+
+    processed_features, vector = tfidf(tweets, opcion)
+
