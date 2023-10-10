@@ -7,29 +7,9 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-
-###########################################################################################################################################################################
-#########################################################           Inicialización         ###############################################################
-###########################################################################################################################################################################
-if __name__=="__main__":
-    dfTweetsData = []
-    dfTweetsData = pd.read_csv("suicidal_data.csv",sep=",",encoding='cp1252')
-
-    print(dfTweetsData['label'].value_counts())
-
-    # to check out what we are going to be working with
-    dfTweetsData.info()
-
-    # re-arrange:  y:class and x:features
-    y_train = dfTweetsData['label'].copy()
-    dfTweetsData.drop('label', axis=1, inplace=True)
-
 ###########################################################################################################################################################################
 #########################################################           MÉTODOS           ###############################################################
 ###########################################################################################################################################################################
-def analisisDeDato():
-    pass
-
 def barPlotInstanciasPorClase(y_train):
     # num samples per class
     value_counts = y_train.value_counts()
@@ -54,11 +34,14 @@ def barPlotInstanciasPorClase(y_train):
     plt.show()
 
 
-def analisisDeDato():  ##david
+def analisisDeDato(tweets):  ##david
     #Comprobar si hay valores faltantes, calcular máximo, medio, mínimo, intancias repetidas, número y tipo de atributos y rango de valores.
     #Precondición: Dado el conjunto de datos ya leido y leido en pandas.
     #Postcondición: imprime mensajes avisando de valores faltantes... y en caso de haberlos solucionandolos o borrando o añadiendo con la media...
-    pass
+    print(tweets[(tweets['label']=="no")].head(5))
+    print(tweets[(tweets['label']=="si")].head(5))
+
+    
 
 def preproceso():    ##david
     #Hay que cambiar los mensajes para quitar mayusculas, stop words, lematización....
@@ -103,3 +86,27 @@ def clasificarInstancia():      ##bermudez
     #Precondición: Recibe un tweet correcto y (no se si) si vectorizado junto al modelo guardado con K-Means.
     #Postcondición: Devuelve un label con el valor de la instancia
     pass
+
+
+###########################################################################################################################################################################
+#########################################################           Inicialización         ###############################################################
+###########################################################################################################################################################################
+if __name__=="__main__":
+    dfTweetsData = []
+    dfTweetsData = pd.read_csv("suicidal_data.csv",sep=",",encoding='cp1252')
+
+    # Mapear los valores en la columna 'label'
+    dfTweetsData['label'] = dfTweetsData['label'].map({0: 'no', 1: 'si'})
+
+    print("Las instancias están repartidas en las dos clases de la siguiente forma:")
+    print(dfTweetsData['label'].value_counts(), end="\n")
+    print()
+    # to check out what we are going to be working with
+    #dfTweetsData.info()
+
+    '''
+    # re-arrange:  y:class and x:features
+    y_train = dfTweetsData['label'].copy()
+    dfTweetsData.drop('label', axis=1, inplace=True)
+    '''
+    analisisDeDato(dfTweetsData)
