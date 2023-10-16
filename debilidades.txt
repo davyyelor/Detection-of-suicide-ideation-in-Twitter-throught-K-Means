@@ -1,0 +1,7 @@
+· Algoritmo: detallar todas las condiciones del algoritmo (criterio de parada, iteraciones máximas...) 
+    noseke de metodologia de la programación
+
+· Marco PCA: pca hace un CAMBIO DE BASE con un criterio, la varianza (no supervisado). el marco teorico 
+    no esta dominado, hay que entender bien que hace. manter un criterio y sequir aplicandolo.
+
+· Argumentación basada en evidencias experimentales exhaustivas
