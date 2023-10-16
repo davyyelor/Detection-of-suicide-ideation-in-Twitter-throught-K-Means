@@ -142,19 +142,12 @@ def preprocesado(df_train):
     preprocessed_tweets = []
     for tweet in tweets:
         words = emoji.demojize(tweet, delimiters=("", ""))
-        print("emoji")
         words = remove_non_ascii(words)
-        print("ascii")
         words = to_lowercase(words)
-        print("a minúsculas")
         words = remove_punctuation(words)
-        print("sin signos de puntuación")
         words = replace_numbers(words)
-        print("sin números")
         words = remove_stopwords(words)
-        print("sin stopwords")
         words = lemmatize_verbs(words)
-        print("lematizados")
         words = stem_words(words)
         preprocessed_tweets.append(words)
     return labels, preprocessed_tweets
@@ -264,5 +257,5 @@ if __name__=="__main__":
 
     opcion = "tf-idf"
 
-    processed_features, vector = tfidf(tweets, opcion)
+    processed_features, vector = vectorizacion(tweets, opcion)
 
