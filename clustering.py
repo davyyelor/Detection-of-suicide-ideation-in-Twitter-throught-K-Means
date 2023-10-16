@@ -1,6 +1,5 @@
 # Autores:
 # Descripción:
-
 ###########################################################################################################################################################################
 #########################################################           IMPORTACIONES       ###############################################################
 ###########################################################################################################################################################################
@@ -135,13 +134,15 @@ def lemmatize_verbs(words):
 
 
 def preprocesado(df_train):
-    tweets = df_train['tweet'].values.tolist()
-    print(tweets[0])
+    features = df_train['tweet'].values.tolist()
     labels = df_train['label'].values
+    processed_features = []
 
-    preprocessed_tweets = []
-    for tweet in tweets:
-        words = emoji.demojize(tweet, delimiters=("", ""))
+    for words in range(0, len(features)):
+        words = str(features[words])
+        words = emoji.demojize((words), delimiters=("", ""))
+        # words = words.split(" ")[1:-1]
+        # words = ' '.join([str(elem) for elem in words])
         words = remove_non_ascii(words)
         words = to_lowercase(words)
         words = remove_punctuation(words)
@@ -149,8 +150,10 @@ def preprocesado(df_train):
         words = remove_stopwords(words)
         words = lemmatize_verbs(words)
         words = stem_words(words)
-        preprocessed_tweets.append(words)
-    return labels, preprocessed_tweets
+        words = ' '.join([str(elem) for elem in words])
+        processed_features.append(words)
+    print(processed_features)
+    return labels, processed_features
 
 
 
@@ -258,4 +261,6 @@ if __name__=="__main__":
     opcion = "tf-idf"
 
     processed_features, vector = vectorizacion(tweets, opcion)
+
+    print("Se ha vectorizado con", opcion)
 
