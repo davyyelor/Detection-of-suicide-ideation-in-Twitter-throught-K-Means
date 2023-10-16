@@ -135,8 +135,8 @@ def lemmatize_verbs(words):
 
 
 def preprocesado(df_train):
-    features = df_train['text'].values.tolist()
-    labels = df_train['airline_sentiment'].values
+    features = df_train['tweet'].values.tolist()
+    labels = df_train['label'].values
     processed_features = []
 
     for words in range(0, len(features)):
@@ -150,7 +150,7 @@ def preprocesado(df_train):
         words = replace_numbers(words)
         words = remove_stopwords(words)
         words = lemmatize_verbs(words)
-        # words = stem_words(words)
+        words = stem_words(words)
         words = ' '.join([str(elem) for elem in words])
         processed_features.append(words)
     print(processed_features)
@@ -255,6 +255,7 @@ if __name__=="__main__":
     barPlotInstanciasPorClase(dfTweetsData)
 
     #analisisDeDato(dfTweetsData)
+
 
     labels, tweets = preprocesado(dfTweetsData)
 
