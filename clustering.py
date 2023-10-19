@@ -16,13 +16,9 @@ from nltk import WordNetLemmatizer, LancasterStemmer
 import emoji
 import inflect as inflect
 import nltk
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 import gensim
-from sklearn.naive_bayes import MultinomialNB
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import classification_report
+from sklearn.cluster import KMeans
 
 
 ###########################################################################################################################################################################
@@ -229,18 +225,23 @@ def redimensionar():     #albert
     #Postcondición: devuelve y redimensiona si procediese
     pass
 
-def clustering(X,y):    #alberto              #IMPORTANTE: hay que probar con distintos clusters, en vez de dos clusters que seán si o no, por ejemplo 5 que sean, si o si, muy posible, posible, poco posible, imposible
+def clustering(X,n):    #alberto              #IMPORTANTE: hay que probar con distintos clusters, en vez de dos clusters que seán si o no, por ejemplo 5 que sean, si o si, muy posible, posible, poco posible, imposible
     #Utilizar K-Means sin usar ninguna librería para poder clasificar las instancias actuales y futuras.
     #Precondición: Recibe los tweets vectorizados y redimensionados
     #Postcondición: Devuelve un modelo K-Means con los mejores hiperparámetros y con las instancias calculadas vs label real
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+    modelo = KMeans(n_clusters=n, random_state=42)
+    # Entrenar el modelo K-Means
+    modelo.fit(X)
 
-    clf = MultinomialNB()
-    clf.fit(X_train, y_train)
+    # Obtener las etiquetas predichas por el modelo
+    y_pred = modelo.labels_
 
-    y_pred = clf.predict(X_test)
+    return y_pred
 
-    print(classification_report(y_test, y_pred))
+
+
+
+
 def obtenerPuntuaciones():    ###bermu
     #calcular las puntuaciones con diferentes métricas para ver la calidad de nuestro moodelo, si tiene capacidad de mejora o por el contrario ya podría clusterizar todo con un alto grado de confianza.
     #Precondición: Recibe el conjutno ya clasificado
@@ -292,7 +293,7 @@ if __name__=="__main__":
 
     labels, tweets = preprocesado(dfTweetsData)
 
-    opcion = "bow"
+    opcion = "tf-idf"
 
     processed_features, vector = vectorizacion(tweets, opcion)
 
@@ -302,8 +303,12 @@ if __name__=="__main__":
     print(vector.shape)
 
     X = vector
-    y = dfTweetsData['label'] # z_train, z_test
-    clustering(X,y)
+    y_real = dfTweetsData['label']
+    n= 4
+    y_pred =clustering(X,n)
+    for etiqueta in y_pred:
+        print(etiqueta)
+
 
 
 
