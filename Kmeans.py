@@ -29,31 +29,37 @@ class KMeans_Clustering():
         # [[ valores_palabra ],
         #  [ valores_palabra ]]
         
-        centroids_asignados = {}
+        centroides_asignados = {}
 
+        #Matriz de centroides, filas son el índice del centroide y columnas los valores para esa componente en cada centroide
         if self.method == None:
-            self.centroides = np.random.rand(self.n_clusters, instances[1].size())
-        
-        ###################################################
-        ### REASIGNACIÓN DE INSTANCIAS CON SU CENTROIDE ###
-        ###################################################
+            self.centroides = np.random.rand(self.n_clusters, instances[0].size())
 
-        for instance_idx in range(instances[0].size()):
-            distanciaMin = float('inf')
-            for centroid_idx in range(self.centroids[0]):
-                distancia = self.minkowski_distance(instances[instance_idx], self.centroids[centroid_idx])
-                if distancia < distanciaMin:
-                    distanciaMin = distancia
-                    centroid = centroid_idx
-            centroids_asignados[centroid].append(instance_idx)
+        for _ in self.iter_max:
+            ###################################################
+            ### REASIGNACIÓN DE INSTANCIAS CON SU CENTROIDE ###
+            ###################################################
+
+            for instance_idx in range(instances.size()):
+                distanciaMin = float('inf')
+                for centroid_idx in range(self.centroides[0].size()):
+                    distancia = self.minkowski_distance(instances[instance_idx], self.centroides[centroid_idx])
+                    if distancia < distanciaMin:
+                        distanciaMin = distancia
+                        centroid = centroid_idx
+                centroides_asignados[centroid].append(instance_idx)
 
 
-        ###################################################
-        ###         CALCULAR NUEVOS CENTROIDES          ###
-        ###################################################
+            ###################################################
+            ###         CALCULAR NUEVOS CENTROIDES          ###
+            ###################################################
+            
+            for numero_cluster in centroides_asignados.keys():
+                lista_idx_instancias = centroides_asignados[numero_cluster]
+                lista_instancias = np.array(instances[i] for i in lista_idx_instancias)
+                nuevo_cluster = np.mean(lista_instancias, axis=0)
+                self.centroides[numero_cluster] = nuevo_cluster
 
-        for vectores in centroids_asignados.values():
-            np.array
 
 
 
