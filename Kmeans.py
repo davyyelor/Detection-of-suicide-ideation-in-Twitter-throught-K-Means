@@ -1,3 +1,4 @@
+import random
 from sklearn.cluster import k_means
 import numpy as np
 
@@ -28,22 +29,25 @@ class KMeans_Clustering():
         #Instances: 
         # [[ valores_palabra ],
         #  [ valores_palabra ]]
+        N = len(instances[0])
         
-        centroides_asignados = {}
 
         #Matriz de centroides, filas son el índice del centroide y columnas los valores para esa componente en cada centroide
         if self.method == None:
-            self.centroides = np.random.rand(self.n_clusters, instances[0].size())
+            self.centroides = random.sample(instances, self.n_clusters)
+        
 
-        for _ in self.iter_max:
+        for _ in range(self.iter_max):
             ###################################################
             ### REASIGNACIÓN DE INSTANCIAS CON SU CENTROIDE ###
             ###################################################
+            centroides_asignados = {}
+            centroides_asignados = {i: [] for i in range(self.n_clusters)}
 
-            for instance_idx in range(instances.size()):
+            for instance_idx in range(len(instances)):
                 distanciaMin = float('inf')
-                for centroid_idx in range(self.centroides[0].size()):
-                    distancia = self.minkowski_distance(instances[instance_idx], self.centroides[centroid_idx])
+                for centroid_idx in range(len(self.centroides)):
+                    distancia = self.minkowski_distance(instances[instance_idx], self.centroides[centroid_idx], self.p_value)
                     if distancia < distanciaMin:
                         distanciaMin = distancia
                         centroid = centroid_idx
@@ -56,9 +60,18 @@ class KMeans_Clustering():
             
             for numero_cluster in centroides_asignados.keys():
                 lista_idx_instancias = centroides_asignados[numero_cluster]
-                lista_instancias = np.array(instances[i] for i in lista_idx_instancias)
-                nuevo_cluster = np.mean(lista_instancias, axis=0)
-                self.centroides[numero_cluster] = nuevo_cluster
+                if lista_idx_instancias != []:
+                    lista_instancias = np.array([instances[i] for i in lista_idx_instancias])
+                    nuevo_cluster = np.mean(lista_instancias, axis=0)
+                    self.centroides[numero_cluster] = nuevo_cluster
+                else:
+                    self.centroides[numero_cluster] = np.random.rand(N)
+
+        self.labels = []
+        for instance_idx in range(len(instances)):
+            for centroid_idx in centroides_asignados.keys():
+                if instance_idx in centroides_asignados[centroid_idx]:
+                    self.labels.append(centroid_idx)
 
 
 
