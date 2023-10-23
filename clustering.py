@@ -200,6 +200,7 @@ def wordEmbeddings(processed_features):
         seed=34)
 
     model_w2v.train(tokenized_tweet, total_examples=len(processed_features), epochs=20)
+    we_vectorizado= np.vectorize(processed_features, model=model_w2v, strategy='average')
 
     # Ahora puedes hacer uso del modelo entrenado para obtener representaciones vectoriales de palabras o realizar tareas de procesamiento de texto con word embeddings.
     # Por ejemplo, para encontrar palabras similares a "die":
@@ -303,9 +304,10 @@ if __name__=="__main__":
 
     labels, tweets = preprocesado(dfTweetsData)
 
-    opcion = "tf-idf"
+    opcion = "word-embedding"
 
     processed_features, vector = vectorizacion(tweets, opcion)
+    print(vector)
 
 
     '''print("Se ha vectorizado con", opcion)
@@ -320,7 +322,7 @@ if __name__=="__main__":
     #for etiqueta in y_pred:
         #print(etiqueta)
     tiempo = time.time()
-    kmeans = kMeans.KMeans_Clustering(n_cluster=n, iter_max=5, p_value=3)
+    kmeans = kMeans.KMeans_Clustering(n_cluster=n, iter_max=10, p_value=6)
     kmeans.ajustar(instances=X)
 
 

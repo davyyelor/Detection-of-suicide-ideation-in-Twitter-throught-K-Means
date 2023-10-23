@@ -1,7 +1,10 @@
 import time
 import matplotlib.pyplot as plt
 from sklearn.cluster import KMeans
-from Kmeans import KMeans_Clustering
+import pycuda.driver as cuda
+import pycuda.autoinit
+from pycuda.compiler import SourceModule
+from kMeans import KMeans_Clustering
 
 
 x = [4, 5, 10, 4, 3, 11, 14 , 6, 10, 12]
