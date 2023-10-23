@@ -24,6 +24,7 @@ from sklearn.cluster import KMeans
 
 import kMeans
 from kMeans import *
+from kMeans_cuda import *
 
 
 ###########################################################################################################################################################################
@@ -304,7 +305,7 @@ if __name__=="__main__":
 
     labels, tweets = preprocesado(dfTweetsData)
 
-    opcion = "word-embedding"
+    opcion = "bow"
 
     processed_features, vector = vectorizacion(tweets, opcion)
     print(vector)
@@ -322,7 +323,7 @@ if __name__=="__main__":
     #for etiqueta in y_pred:
         #print(etiqueta)
     tiempo = time.time()
-    kmeans = kMeans.KMeans_Clustering(n_cluster=n, iter_max=10, p_value=6)
+    kmeans = KMeans_Clustering_CUDA(n_cluster=n, iter_max=10, p_value=6)
     kmeans.ajustar(instances=X)
 
 
