@@ -1,43 +1,73 @@
+import random
+from sklearn.cluster import k_means
+import numpy as np
+
+
 class KMeans_Clustering():
 
-    def __init__(self, n_cluster=None, initialisation_method=None):
+    def __init__(self, n_cluster=None, initialisation_method=None, iter_max=100, p_value=1):
+        self.n_clusters = n_cluster
+        self.method = initialisation_method
+        self.iter_max = iter_max
+        self.p_value = p_value
+        # Devolver una matriz que sea un vector de vectores (n_clusters vectores que contienen las coordenadas de los centros)
+
+    def minkowski_distance(self, vector1, vector2, p_value):
+
+        def p_exp(x, y, p):
+            return abs(x - y) ** p
+
+        distance = 0
+        for idx in range(len(vector1)):
+            distance += p_exp(vector1[idx], vector2[idx], p_value)
+
+        return distance ** (1 / p_value)
+
+    def ajustar(self, instances):  # Itera el algoritmo de KMeans, calculando los centros (La matriz)
+        # Instances:
+        # [[ valores_palabra ],
+        #  [ valores_palabra ]]
+        N = len(instances[0])
+
+        # Matriz de centroides, filas son el índice del centroide y columnas los valores para esa componente en cada centroide
+        if self.method == None:
+            self.centroides = random.sample(instances, self.n_clusters)
+
+        for _ in range(self.iter_max):
+            ###################################################
+            ### REASIGNACIÓN DE INSTANCIAS CON SU CENTROIDE ###
+            ###################################################
+            centroides_asignados = {}
+            centroides_asignados = {i: [] for i in range(self.n_clusters)}
+
+            for instance_idx in range(len(instances)):
+                distanciaMin = float('inf')
+                for centroid_idx in range(len(self.centroides)):
+                    distancia = self.minkowski_distance(instances[instance_idx], self.centroides[centroid_idx],
+                                                        self.p_value)
+                    if distancia < distanciaMin:
+                        distanciaMin = distancia
+                        centroid = centroid_idx
+                centroides_asignados[centroid].append(instance_idx)
+
+            ###################################################
+            ###         CALCULAR NUEVOS CENTROIDES          ###
+            ###################################################
+
+            for numero_cluster in centroides_asignados.keys():
+                lista_idx_instancias = centroides_asignados[numero_cluster]
+                if lista_idx_instancias != []:
+                    lista_instancias = np.array([instances[i] for i in lista_idx_instancias])
+                    nuevo_cluster = np.mean(lista_instancias, axis=0)
+                    self.centroides[numero_cluster] = nuevo_cluster
+                else:
+                    self.centroides[numero_cluster] = np.random.rand(N)
+
+        self.labels = []
+        for instance_idx in range(len(instances)):
+            for centroid_idx in centroides_asignados.keys():
+                if instance_idx in centroides_asignados[centroid_idx]:
+                    self.labels.append(centroid_idx)
+
+    def calcular_clusters(self):  # Etiqueta las instancias de inicialización
         pass
-
-    def minkowski_distance(point1, point2, p):
-        return np.power(np.sum(np.power(np.abs(point1 - point2), p), axis=0), 1 / p)
-
-    # Función para asignar cada punto al centroide más cercano
-    def assign_to_clusters(data, centroids, p):
-        num_clusters = centroids.shape[0]
-        num_points = data.shape[0]
-        labels = np.zeros(num_points, dtype=int)
-        distances = np.zeros((num_points, num_clusters))
-
-        for i in range(num_clusters):
-            distances[:, i] = minkowski_distance(data.T, centroids[i].T, p)
-
-        labels = np.argmin(distances, axis=1)
-        return labels
-
-    # Función principal de K-Means con distancia de Minkowski
-    def kmeans_minkowski(data, num_clusters, max_iters=100, p=2):
-        num_points, num_features = data.shape
-
-        # Inicialización de los centroides aleatoriamente
-        random_indices = np.random.choice(num_points, num_clusters, replace=False)
-        centroids = data[random_indices]
-
-        for iter in range(max_iters):
-            # Paso 1: Asignar cada punto al centroide más cercano
-            labels = assign_to_clusters(data, centroids, p)
-
-            # Paso 2: Actualizar los centroides
-            new_centroids = update_centroids(data, labels, num_clusters)
-
-            # Comprobar si los centroides han convergido
-            if np.array_equal(centroids, new_centroids):
-                break
-
-            centroids = new_centroids
-
-        return labels, centroids
