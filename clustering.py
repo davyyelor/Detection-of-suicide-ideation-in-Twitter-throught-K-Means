@@ -13,17 +13,16 @@ from nltk.stem.porter import PorterStemmer
 import re
 from nltk.corpus import stopwords
 from nltk import WordNetLemmatizer, LancasterStemmer
-import emoji
+#import emoji
 import inflect as inflect
 from Kmeans import *
 import nltk
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 import gensim
-from sklearn.naive_bayes import MultinomialNB
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import classification_report
+from sklearn.cluster import KMeans
+
+import kMeans
+from kMeans import *
 
 
 ###########################################################################################################################################################################
@@ -148,7 +147,7 @@ def preprocesado(df_train):
 
     for words in range(0, len(features)):
         words = str(features[words])
-        words = emoji.demojize((words), delimiters=("", ""))
+        #words = emoji.demojize((words), delimiters=("", ""))
         # words = words.split(" ")[1:-1]
         # words = ' '.join([str(elem) for elem in words])
         words = remove_non_ascii(words)
@@ -183,6 +182,7 @@ def tfidf(processed_features):
     tfidf = tfidf_vectorizer.fit_transform(processed_features)
     return processed_features, tfidf_vectorizer
 
+
 def wordEmbeddings(processed_features):
     # Word embbeding
     tokenized_tweet = [text.split() for text in processed_features]  # tokenizing
@@ -199,7 +199,11 @@ def wordEmbeddings(processed_features):
         seed=34)
 
     model_w2v.train(tokenized_tweet, total_examples=len(processed_features), epochs=20)
-    model_w2v.wv.most_similar(positive="die")
+
+    # Ahora puedes hacer uso del modelo entrenado para obtener representaciones vectoriales de palabras o realizar tareas de procesamiento de texto con word embeddings.
+    # Por ejemplo, para encontrar palabras similares a "die":
+    similar_words = model_w2v.wv.most_similar(positive="die")
+    print(similar_words)
 
 def vectorizacion(tweets, opc):   #david
     #Hay que vectorizar el conjunto de datos de tal forma que los mensjes de twitter para que la información de los mensajes se pueda contar y sea lo más representativa posible
@@ -230,18 +234,23 @@ def redimensionar():     #albert
     #Postcondición: devuelve y redimensiona si procediese
     pass
 
-def clustering(X,y):    #alberto              #IMPORTANTE: hay que probar con distintos clusters, en vez de dos clusters que seán si o no, por ejemplo 5 que sean, si o si, muy posible, posible, poco posible, imposible
+def clustering(X,n):    #alberto              #IMPORTANTE: hay que probar con distintos clusters, en vez de dos clusters que seán si o no, por ejemplo 5 que sean, si o si, muy posible, posible, poco posible, imposible
     #Utilizar K-Means sin usar ninguna librería para poder clasificar las instancias actuales y futuras.
     #Precondición: Recibe los tweets vectorizados y redimensionados
     #Postcondición: Devuelve un modelo K-Means con los mejores hiperparámetros y con las instancias calculadas vs label real
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+    modelo = KMeans(n_clusters=n, random_state=42)
+    # Entrenar el modelo K-Means
+    modelo.fit(X)
 
-    clf = MultinomialNB()
-    clf.fit(X_train, y_train)
+    # Obtener las etiquetas predichas por el modelo
+    y_pred = modelo.labels_
 
-    y_pred = clf.predict(X_test)
+    return y_pred
 
-    print(classification_report(y_test, y_pred))
+
+
+
+
 def obtenerPuntuaciones():    ###bermu
     #calcular las puntuaciones con diferentes métricas para ver la calidad de nuestro moodelo, si tiene capacidad de mejora o por el contrario ya podría clusterizar todo con un alto grado de confianza.
     #Precondición: Recibe el conjutno ya clasificado
@@ -293,7 +302,7 @@ if __name__=="__main__":
 
     labels, tweets = preprocesado(dfTweetsData)
 
-    opcion = "bow"
+    opcion = "tf-idf"
 
     processed_features, vector = vectorizacion(tweets, opcion)
 
@@ -303,8 +312,20 @@ if __name__=="__main__":
     print(vector.shape)
 
     X = vector
-    y = dfTweetsData['label'] # z_train, z_test
-    clustering(X,y)
+    y_real = dfTweetsData['label']
+    n= 4
+    #y_pred =clustering(X,n)
+    #for etiqueta in y_pred:
+        #print(etiqueta)
+
+    algoritmo = kMeans.KMeans_Clustering(n_cluster=n)
+    algoritmo.ajustar(instances=X)
+
+    y_pred = algoritmo.labels
+    print(y_pred)
+
+
+
 
 
 
