@@ -5,6 +5,7 @@
 ###########################################################################################################################################################################
 #########################################################           IMPORTACIONES       ###############################################################
 ###########################################################################################################################################################################
+import time
 import pandas as pd
 import matplotlib.pyplot as plt
 import unicodedata
@@ -15,7 +16,7 @@ from nltk.corpus import stopwords
 from nltk import WordNetLemmatizer, LancasterStemmer
 #import emoji
 import inflect as inflect
-from Kmeans import *
+from kMeans import *
 import nltk
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 import gensim
@@ -307,23 +308,25 @@ if __name__=="__main__":
     processed_features, vector = vectorizacion(tweets, opcion)
 
 
-    print("Se ha vectorizado con", opcion)
-    print(vector)
-    print(vector.shape)
+    '''print("Se ha vectorizado con", opcion)
+    instancia = vector.toarray()[0]
+    print(instancia)
+    print(type(instancia))'''
 
-    X = vector
+    X = vector.toarray()
     y_real = dfTweetsData['label']
-    n= 4
+    n = 2
     #y_pred =clustering(X,n)
     #for etiqueta in y_pred:
         #print(etiqueta)
+    tiempo = time.time()
+    kmeans = kMeans.KMeans_Clustering(n_cluster=n, iter_max=5, p_value=3)
+    kmeans.ajustar(instances=X)
 
-    algoritmo = kMeans.KMeans_Clustering(n_cluster=n)
-    algoritmo.ajustar(instances=X)
 
-    y_pred = algoritmo.labels
-    print(y_pred)
+    y_pred = kmeans.labels
 
+    print(f"Ha tardado {time.time() - tiempo} segundos")
 
 
 
