@@ -13,12 +13,15 @@ from nltk.stem.porter import PorterStemmer
 import re
 from nltk.corpus import stopwords
 from nltk import WordNetLemmatizer, LancasterStemmer
-import emoji
+#import emoji
 import inflect as inflect
 import nltk
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 import gensim
 from sklearn.cluster import KMeans
+
+import kMeans
+from kMeans import *
 
 
 ###########################################################################################################################################################################
@@ -143,7 +146,7 @@ def preprocesado(df_train):
 
     for words in range(0, len(features)):
         words = str(features[words])
-        words = emoji.demojize((words), delimiters=("", ""))
+        #words = emoji.demojize((words), delimiters=("", ""))
         # words = words.split(" ")[1:-1]
         # words = ' '.join([str(elem) for elem in words])
         words = remove_non_ascii(words)
@@ -178,6 +181,7 @@ def tfidf(processed_features):
     tfidf = tfidf_vectorizer.fit_transform(processed_features)
     return processed_features, tfidf_vectorizer
 
+
 def wordEmbeddings(processed_features):
     # Word embbeding
     tokenized_tweet = [text.split() for text in processed_features]  # tokenizing
@@ -194,7 +198,11 @@ def wordEmbeddings(processed_features):
         seed=34)
 
     model_w2v.train(tokenized_tweet, total_examples=len(processed_features), epochs=20)
-    model_w2v.wv.most_similar(positive="die")
+
+    # Ahora puedes hacer uso del modelo entrenado para obtener representaciones vectoriales de palabras o realizar tareas de procesamiento de texto con word embeddings.
+    # Por ejemplo, para encontrar palabras similares a "die":
+    similar_words = model_w2v.wv.most_similar(positive="die")
+    print(similar_words)
 
 def vectorizacion(tweets, opc):   #david
     #Hay que vectorizar el conjunto de datos de tal forma que los mensjes de twitter para que la información de los mensajes se pueda contar y sea lo más representativa posible
@@ -305,9 +313,17 @@ if __name__=="__main__":
     X = vector
     y_real = dfTweetsData['label']
     n= 4
-    y_pred =clustering(X,n)
-    for etiqueta in y_pred:
-        print(etiqueta)
+    #y_pred =clustering(X,n)
+    #for etiqueta in y_pred:
+        #print(etiqueta)
+
+    algoritmo = kMeans.KMeans_Clustering(n_cluster=n)
+    algoritmo.ajustar(instances=X)
+
+    y_pred = algoritmo.labels
+    print(y_pred)
+
+
 
 
 
