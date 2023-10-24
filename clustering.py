@@ -308,7 +308,6 @@ if __name__=="__main__":
     opcion = "bow"
 
     processed_features, vector = vectorizacion(tweets, opcion)
-    print(vector)
 
 
     '''print("Se ha vectorizado con", opcion)
@@ -323,7 +322,7 @@ if __name__=="__main__":
     #for etiqueta in y_pred:
         #print(etiqueta)
     tiempo = time.time()
-    kmeans = KMeans_Clustering_CUDA(n_cluster=n, iter_max=10, p_value=6)
+    kmeans = KMeans_Clustering_CUDA(n_cluster=n, iter_max=100, p_value=6)
     kmeans.ajustar(instances=X)
 
 

@@ -77,13 +77,15 @@ class KMeans_Clustering_CUDA():
         '''N = len(instances[0])'''
         N = instances.shape[0]
         instances = np.array(instances, dtype=np.float32)
-        print("Numero de instancias", N)
         
 
         # Matriz de centroides, filas son el índice del centroide y columnas los valores para esa componente en cada centroide
         if self.method == None:
             self.centroides = random.sample( instances.tolist(), self.n_clusters ) #De la lista de instancias, cogemos N para inicializar los clusters
             self.centroides = np.array(self.centroides, dtype=np.float32)
+
+        centroides_prev = None
+        
 
         for iter in range(self.iter_max):
             ###################################################
@@ -111,6 +113,16 @@ class KMeans_Clustering_CUDA():
                 nuevo_cluster = np.mean(lista_instancias, axis=0)
                 self.centroides[numero_cluster] = nuevo_cluster
             
+            if centroides_prev == centroides_asignados:
+                print("\n\nConverge")
+                break
+            else:
+                centroides_prev = centroides_asignados
+
+            ###################################################
+            ###           PRINT DE LAS ITERACIONES          ###
+            ###################################################
+
             print("\nIteracion", iter)
             for centroid_idx in centroides_asignados.keys():
                 num_inst = len(centroides_asignados[centroid_idx])
