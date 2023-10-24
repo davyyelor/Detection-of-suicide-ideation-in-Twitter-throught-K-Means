@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import kMeans
+import kMeans_cuda
 
 ###########################################################################################################################################################################
 #########################################################           IMPORTACIONES       ##################################################################################
@@ -128,7 +129,7 @@ bow.shape
 from sklearn.feature_extraction.text import TfidfVectorizer,CountVectorizer
 import gensim
 
-tfidf_vectorizer = TfidfVectorizer(max_df=0.90, min_df=2, max_features=1000, stop_words='english')
+tfidf_vectorizer = TfidfVectorizer(max_df=0.90, min_df=2, max_features=20000, stop_words='english')
 # TF-IDF feature matrix
 tfidf_matrix = tfidf_vectorizer.fit_transform(train['tidy_tweet'])
 
@@ -206,7 +207,7 @@ model_d2v = gensim.models.Doc2Vec(dm=1, # dm = 1 for ‘distributed memory’ mo
                                   workers=3, # no. of cores
                                   alpha=0.1, # learning rate
                                   seed = 23)
-print("conseguid")
+print("Conseguido")
 model_d2v.build_vocab([i for i in tqdm(labeled_tweets)])
 
 model_d2v.train(labeled_tweets, total_examples= len(train['tidy_tweet']), epochs=15)
@@ -301,7 +302,8 @@ tfidf_array = tfidf_matrix.toarray()
 
 # Luego, instanciamos la clase KMeans_Clustering y ajustamos el modelo a tus datos.
 # Debes ajustar el número de clusters, el método de inicialización y otros parámetros según tu preferencia.
-algoritmo = KMeans_Clustering(n_cluster=2, initialisation_method='random', iter_max=100, p_value=2)
+algoritmo = kMeans_cuda.KMeans_Clustering_CUDA(n_cluster=2, iter_max=100, p_value=2)
+print(tfidf_array.shape)
 algoritmo.ajustar(instances=tfidf_array)
 
 # Ahora que el modelo K-Means ha sido ajustado, puedes obtener las etiquetas predichas para tus datos.
@@ -309,7 +311,45 @@ algoritmo.ajustar(instances=tfidf_array)
 predicted_labels = algoritmo.labels
 
 # Imprime las etiquetas predichas
-print("Etiquetas predichas:", predicted_labels)
+#print("Etiquetas predichas:", predicted_labels)
+
+import seaborn as sns
+from sklearn.metrics import confusion_matrix
+from utils import matriz_de_confusion, renombrar_clusters
+matriz_de_confusion(predicted_labels, train)
+cluster_to_class = {}
+for cluster_id in range(2):
+    cluster_indices = np.where(predicted_labels == cluster_id)[0]
+    true_labels = train['label'].iloc[cluster_indices].values
+    most_common_label = np.bincount(true_labels).argmax()
+    cluster_to_class[cluster_id] = most_common_label
+
+# Mapear las etiquetas de clúster a etiquetas de clase
+reassigned_labels = np.vectorize(cluster_to_class.get)(predicted_labels)
+
+# Calculate the confusion matrix with the reassigned labels
+cm = confusion_matrix(predicted_labels, reassigned_labels)
+total_correct = np.trace(cm)  # Suma de valores en la diagonal principal
+total_samples = np.sum(cm)    # Suma de todos los valores en la matriz de confusión
+# Create a heatmap
+plt.xlabel('Clase Real')
+plt.ylabel('Cluster')
+ax = sns.heatmap(cm, annot=True, fmt="d", cmap="Blues")
+plt.title("Matriz de confusión con las etiquetas ajustadas")
+plt.show()
+
+# Calculate the confusion matrix with the reassigned labels
+cm = confusion_matrix(predicted_labels, reassigned_labels)
+total_correct = np.trace(cm)  # Suma de valores en la diagonal principal
+total_samples = np.sum(cm)    # Suma de todos los valores en la matriz de confusión
+
+# Calcular el número total de clasificaciones incorrectas
+total_incorrect = total_samples - total_correct
+
+# Calcular la tasa de error
+error_rate = total_incorrect / total_samples
+
+print("Tasa de Error:", error_rate)
 
 
 ####################################################################################KMEANS BOW
@@ -318,7 +358,8 @@ bow_array = bow.toarray()
 
 # Luego, instanciamos la clase KMeans_Clustering y ajustamos el modelo a tus datos.
 # Debes ajustar el número de clusters, el método de inicialización y otros parámetros según tu preferencia.
-algoritmo = KMeans_Clustering(n_cluster=2, initialisation_method='random', iter_max=100, p_value=2)
+algoritmo = kMeans_cuda.KMeans_Clustering_CUDA(n_cluster=2, iter_max=100, p_value=2)
+print(bow_array.shape)
 algoritmo.ajustar(instances=bow_array)
 
 # Ahora que el modelo K-Means ha sido ajustado, puedes obtener las etiquetas predichas para tus datos.
@@ -326,7 +367,7 @@ algoritmo.ajustar(instances=bow_array)
 predicted_labels = algoritmo.labels
 
 # Imprime las etiquetas predichas
-print("Etiquetas predichas:", predicted_labels)
+#print("Etiquetas predichas:", predicted_labels)
 
 
 
@@ -337,7 +378,8 @@ wd_array = train_w2v
 
 # Luego, instanciamos la clase KMeans_Clustering y ajustamos el modelo a tus datos.
 # Debes ajustar el número de clusters, el método de inicialización y otros parámetros según tu preferencia.
-algoritmo = KMeans_Clustering(n_cluster=2, initialisation_method='random', iter_max=100, p_value=2)
+algoritmo = kMeans_cuda.KMeans_Clustering_CUDA(n_cluster=2, iter_max=100, p_value=2)
+print(wd_array.shape)
 algoritmo.ajustar(instances=wd_array)
 
 # Ahora que el modelo K-Means ha sido ajustado, puedes obtener las etiquetas predichas para tus datos.
@@ -345,4 +387,4 @@ algoritmo.ajustar(instances=wd_array)
 predicted_labels = algoritmo.labels
 
 # Imprime las etiquetas predichas
-print("Etiquetas predichas:", predicted_labels)
+#print("Etiquetas predichas:", predicted_labels)

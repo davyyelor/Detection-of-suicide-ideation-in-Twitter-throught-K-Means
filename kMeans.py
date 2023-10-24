@@ -6,7 +6,7 @@ from scipy.spatial import distance as sp_distance
 
 class KMeans_Clustering():
 
-    def __init__(self, n_cluster=None, initialisation_method=None, iter_max=100, p_value=1):
+    def __init__(self, n_cluster=None, initialisation_method='random', iter_max=100, p_value=1):
         self.n_clusters = n_cluster
         self.method = initialisation_method
         self.iter_max = iter_max
@@ -37,7 +37,7 @@ class KMeans_Clustering():
         
 
         # Matriz de centroides, filas son el índice del centroide y columnas los valores para esa componente en cada centroide
-        if self.method == None:
+        if self.method == 'random':
             self.centroides = random.sample( instances.tolist(), self.n_clusters ) #De la lista de instancias, cogemos N para inicializar los clusters
 
         for iter in range(self.iter_max):
