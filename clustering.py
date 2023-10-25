@@ -17,6 +17,8 @@ import emoji
 import inflect as inflect
 import nltk
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
+from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score, f1_score
+from sklearn.metrics import silhouette_score
 import gensim
 from sklearn.cluster import KMeans
 
@@ -201,9 +203,10 @@ def vectorizacion(tweets, opc):   #david
     #Precondición: La lista de mensajes ya procesada
     #Postcondición: Una lista con las palabras mas representativas y el numero de apariciones o lo que sea usando tf-idf, bow o embedding.
     if opc == "tf-idf":
-        processed_features, tfidf_vectorizer = tfidf(tweets)
-        tfidf_vectors = tfidf_vectorizer.transform(processed_features)
-        return processed_features, tfidf_vectors
+        tfidf_vectorizer = TfidfVectorizer(max_df=0.90, min_df=2, max_features=20000, stop_words='english')
+        tfidf_vectorizer.fit_transform(tweets)
+        tfidf_vectors = tfidf_vectorizer.transform(tweets)
+        return tweets, tfidf_vectors
     elif opc == "bow":
         processed_features,bow_vector = bow(tweets)  # Call the bow function and get the result
         return processed_features, bow_vector
@@ -231,10 +234,10 @@ def clustering(X,n):    #alberto              #IMPORTANTE: hay que probar con di
     #Postcondición: Devuelve un modelo K-Means con los mejores hiperparámetros y con las instancias calculadas vs label real
     modelo = KMeans(n_clusters=n, random_state=42)
     # Entrenar el modelo K-Means
-    modelo.fit(X)
+    
 
     # Obtener las etiquetas predichas por el modelo
-    y_pred = modelo.labels_
+    y_pred = modelo.fit_predict(X)
 
     return y_pred
 
@@ -242,11 +245,29 @@ def clustering(X,n):    #alberto              #IMPORTANTE: hay que probar con di
 
 
 
-def obtenerPuntuaciones():    ###bermu
+def obtenerPuntuaciones(vector, labels):    ###bermu
     #calcular las puntuaciones con diferentes métricas para ver la calidad de nuestro moodelo, si tiene capacidad de mejora o por el contrario ya podría clusterizar todo con un alto grado de confianza.
     #Precondición: Recibe el conjutno ya clasificado
     #Postcondición: Y devuelve las puntuaciones con las métricas más representativas.
-    pass
+
+    silhouette_scores=[]
+    # Calcular el Silhouette Score para cada número de clusters
+    for n in range(2, 6):
+        kmeans = KMeans(n_clusters=n, random_state=42)
+        kmeans.fit(vector)
+        labels = kmeans.labels_
+        silhouette_avg = silhouette_score(vector, labels)
+        silhouette_scores.append(silhouette_avg)
+        print(f"Silhouette Score for {n} clusters: {silhouette_avg}")
+
+    # Crear un gráfico de barras
+    plt.bar(list(range(2,6)), silhouette_scores)
+    plt.xlabel('Número de Clusters')
+    plt.ylabel('Silhouette Score')
+    plt.title('Silhouette Score para Diferentes Números de Clusters')
+    plt.show()
+
+
 def representacionResultados():        #bermudez
     #además de las puntuaciones, presentar barplots mapas de calor... para poder representar mejor los resultados obtenidos y la bonanza de nuestro modelo
     #Precondición: Recibe el conjutno ya clasificado
@@ -281,7 +302,7 @@ if __name__=="__main__":
     dfTweetsData = pd.read_csv("suicidal_data.csv",sep=",",encoding='cp1252')
 
     # Mapear los valores en la columna 'label'
-    dfTweetsData['label'] = dfTweetsData['label'].map({0: 'no', 1: 'si'})
+    #dfTweetsData['label'] = dfTweetsData['label'].map({0: 'no', 1: 'si'})
 
     # to check out what we are going to be working with
     #dfTweetsData.info()
@@ -297,18 +318,36 @@ if __name__=="__main__":
 
     processed_features, vector = vectorizacion(tweets, opcion)
 
-
-    print("Se ha vectorizado con", opcion)
-    print(vector)
-    print(vector.shape)
-
-    X = vector
     y_real = dfTweetsData['label']
-    n= 4
-    y_pred =clustering(X,n)
-    for etiqueta in y_pred:
-        print(etiqueta)
+    n= 2
+    y_pred =clustering(vector,n)
 
+    #obtenerPuntuaciones(vector, y_pred)
 
+    # type(vector.toarray()) = numpy.ndarray
+    # type(y_pred) = numpy.nbarray
+    # type(y_real.values) == numpy.ndarray
+    
+    # Calcular la matriz de confusión
+    confusion = confusion_matrix(y_real.values, y_pred)
+    print("Matriz de Confusión:")
+    print(confusion)
 
+    # Calcular la precisión
+    precision = precision_score(y_real.values, y_pred)
+    print(f"Precisión: {precision:.2f}")
+
+    # Calcular la exhaustividad (recall)
+    recall = recall_score(y_real.values, y_pred)
+    print(f"Exhaustividad (Recall): {recall:.2f}")
+
+    # Calcular la puntuación F1
+    f1 = f1_score(y_real.values, y_pred)
+    print(f"Puntuación F1: {f1:.2f}")
+
+    # Calcular la exactitud (accuracy)
+    accuracy = accuracy_score(y_real.values, y_pred)
+    print(f"Exactitud (Accuracy): {accuracy:.2f}")
+   
+  
 
