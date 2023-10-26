@@ -5,6 +5,7 @@
 ###########################################################################################################################################################################
 #########################################################           IMPORTACIONES       ###############################################################
 ###########################################################################################################################################################################
+import time
 import pandas as pd
 import matplotlib.pyplot as plt
 import unicodedata
@@ -15,6 +16,7 @@ from nltk.corpus import stopwords
 from nltk import WordNetLemmatizer, LancasterStemmer
 #import emoji
 import inflect as inflect
+from kMeans import *
 import nltk
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 import gensim
@@ -22,6 +24,7 @@ from sklearn.cluster import KMeans
 
 import kMeans
 from kMeans import *
+from kMeans_cuda import *
 
 
 ###########################################################################################################################################################################
@@ -198,6 +201,7 @@ def wordEmbeddings(processed_features):
         seed=34)
 
     model_w2v.train(tokenized_tweet, total_examples=len(processed_features), epochs=20)
+    we_vectorizado= np.vectorize(processed_features, model=model_w2v, strategy='average')
 
     # Ahora puedes hacer uso del modelo entrenado para obtener representaciones vectoriales de palabras o realizar tareas de procesamiento de texto con word embeddings.
     # Por ejemplo, para encontrar palabras similares a "die":
@@ -254,25 +258,7 @@ def obtenerPuntuaciones():    ###bermu
     #calcular las puntuaciones con diferentes métricas para ver la calidad de nuestro moodelo, si tiene capacidad de mejora o por el contrario ya podría clusterizar todo con un alto grado de confianza.
     #Precondición: Recibe el conjutno ya clasificado
     #Postcondición: Y devuelve las puntuaciones con las métricas más representativas.
-
-    silhouette_scores=[]
-    # Calcular el Silhouette Score para cada número de clusters
-    for n in range(2, 6):
-        kmeans = KMeans(n_clusters=n, random_state=42)
-        kmeans.fit(vector)
-        labels = kmeans.labels_
-        silhouette_avg = silhouette_score(vector, labels)
-        silhouette_scores.append(silhouette_avg)
-        print(f"Silhouette Score for {n} clusters: {silhouette_avg}")
-
-    # Crear un gráfico de barras
-    plt.bar(list(range(2,6)), silhouette_scores)
-    plt.xlabel('Número de Clusters')
-    plt.ylabel('Silhouette Score')
-    plt.title('Silhouette Score para Diferentes Números de Clusters')
-    plt.show()
-
-
+    pass
 def representacionResultados():        #bermudez
     #además de las puntuaciones, presentar barplots mapas de calor... para poder representar mejor los resultados obtenidos y la bonanza de nuestro modelo
     #Precondición: Recibe el conjutno ya clasificado
@@ -307,7 +293,7 @@ if __name__=="__main__":
     dfTweetsData = pd.read_csv("suicidal_data.csv",sep=",",encoding='cp1252')
 
     # Mapear los valores en la columna 'label'
-    #dfTweetsData['label'] = dfTweetsData['label'].map({0: 'no', 1: 'si'})
+    dfTweetsData['label'] = dfTweetsData['label'].map({0: 'no', 1: 'si'})
 
     # to check out what we are going to be working with
     #dfTweetsData.info()
@@ -319,28 +305,30 @@ if __name__=="__main__":
 
     labels, tweets = preprocesado(dfTweetsData)
 
-    opcion = "word-embedding"
+    opcion = "bow"
 
     processed_features, vector = vectorizacion(tweets, opcion)
 
 
-    print("Se ha vectorizado con", opcion)
-    print(vector)
-    print(vector.shape)
+    '''print("Se ha vectorizado con", opcion)
+    instancia = vector.toarray()[0]
+    print(instancia)
+    print(type(instancia))'''
 
-    X = vector
+    X = vector.toarray()
     y_real = dfTweetsData['label']
-    n= 4
+    n = 2
     #y_pred =clustering(X,n)
     #for etiqueta in y_pred:
         #print(etiqueta)
+    tiempo = time.time()
+    kmeans = KMeans_Clustering_CUDA(n_cluster=n, iter_max=100, p_value=6)
+    kmeans.ajustar(instances=X)
 
-    algoritmo = kMeans.KMeans_Clustering(n_cluster=n)
-    algoritmo.ajustar(instances=X)
 
-    y_pred = algoritmo.labels
-    print(y_pred)
+    y_pred = kmeans.labels
 
+    print(f"Ha tardado {time.time() - tiempo} segundos")
 
 
 
