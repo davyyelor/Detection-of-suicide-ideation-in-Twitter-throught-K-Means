@@ -40,6 +40,8 @@ class KMeans_Clustering():
         if self.method == 'random':
             self.centroides = random.sample( instances.tolist(), self.n_clusters ) #De la lista de instancias, cogemos N para inicializar los clusters
 
+        centroides_prev = None
+
         for iter in range(self.iter_max):
             ###################################################
             ### REASIGNACIÓN DE INSTANCIAS CON SU CENTROIDE ###
@@ -66,6 +68,16 @@ class KMeans_Clustering():
                 nuevo_cluster = np.mean(lista_instancias, axis=0)
                 self.centroides[numero_cluster] = nuevo_cluster
             
+            if centroides_prev == centroides_asignados:
+                print("\n\nConverge")
+                break
+            else:
+                centroides_prev = centroides_asignados
+
+            ###################################################
+            ###           PRINT DE LAS ITERACIONES          ###
+            ###################################################
+
             print("\nIteracion", iter)
             for centroid_idx in centroides_asignados.keys():
                 num_inst = len(centroides_asignados[centroid_idx])

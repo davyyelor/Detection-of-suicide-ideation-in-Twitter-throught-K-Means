@@ -69,8 +69,15 @@ class KMeans_Clustering_CUDA():
         result = np.empty(1, dtype=np.float32)
         cuda.memcpy_dtoh(result, result_gpu)
         return np.power(result[0], 1/p_value)
+    
+    def ajustar(self, instances):
+        if self.method == 'random':
+            self.ajustar_random(instances)
+        elif self.method == '2k':
+            print("Algoritmo inicializando 2k clusters")
+            self.ajustar_2k(instances)
 
-    def ajustar(self, instances):  # Itera el algoritmo de KMeans, calculando los centros (La matriz)
+    def ajustar_random(self, instances):  # Itera el algoritmo de KMeans, calculando los centros (La matriz)
         # Instances:
         # [[ valores_palabra ],
         #  [ valores_palabra ]]
@@ -93,7 +100,81 @@ class KMeans_Clustering_CUDA():
             ###################################################
             centroides_asignados = {}
             centroides_asignados = {i: [] for i in range(self.n_clusters)}
+            
+            for instance_idx in range(N):
+                distanciaMin = float('inf')
+                for centroid_idx in range(len(self.centroides)):
+                    distancia = self.gpu_minkowski_distance(instances[instance_idx], self.centroides[centroid_idx], self.p_value)
+                    if distancia < distanciaMin:
+                        distanciaMin = distancia
+                        centroid = centroid_idx
+                centroides_asignados[centroid].append(instance_idx)
 
+            ###################################################
+            ###         CALCULAR NUEVOS CENTROIDES          ###
+            ###################################################
+
+            for numero_cluster in centroides_asignados.keys():
+                lista_idx_instancias = centroides_asignados[numero_cluster]
+                lista_instancias = [instances[i] for i in lista_idx_instancias]
+                nuevo_centroide = np.mean(lista_instancias, axis=0)
+                self.centroides[numero_cluster] = nuevo_centroide
+            
+            if centroides_prev == centroides_asignados:
+                print("\n\nConverge")
+                break
+            else:
+                centroides_prev = centroides_asignados
+
+            ###################################################
+            ###           PRINT DE LAS ITERACIONES          ###
+            ###################################################
+
+            print("\nIteracion", iter)
+            for centroid_idx in centroides_asignados.keys():
+                num_inst = len(centroides_asignados[centroid_idx])
+                print("Número de instancias para cluster ", centroid_idx, "\t", num_inst)
+            print("======================================")
+
+        self.labels = []
+        for instance_idx in range(N):
+            for centroid_idx in centroides_asignados.keys():
+                if instance_idx in centroides_asignados[centroid_idx]:
+                    self.labels.append(centroid_idx)
+    
+    
+
+    def ajustar_2k(self, instances):
+        from scipy.spatial.distance import cdist
+        clusters = self.n_clusters
+        self.n_clusters *= 2
+        self.ajustar_random(instances)
+        
+        selected_points = np.array([self.centroides[np.random.randint(len(self.centroides))]])  # Start with a random point
+        remaining_points = np.delete(self.centroides, 0, axis=0)  # Remove the selected point from the remaining points
+    
+        while len(selected_points) < clusters:
+            distances = cdist(selected_points, remaining_points, metric='minkowski')
+            furthest_point_idx = np.argmax(np.min(distances, axis=0))
+            selected_points = np.append(selected_points, [remaining_points[furthest_point_idx]], axis=0)
+            remaining_points = np.delete(remaining_points, furthest_point_idx, axis=0)
+        
+
+        self.centroides = selected_points
+
+        N = instances.shape[0]
+        instances = np.array(instances, dtype=np.float32)
+
+        centroides_prev = None
+        
+
+        for iter in range(self.iter_max):
+            ###################################################
+            ### REASIGNACIÓN DE INSTANCIAS CON SU CENTROIDE ###
+            ###################################################
+            centroides_asignados = {}
+            centroides_asignados = {i: [] for i in range(self.n_clusters)}
+            
             for instance_idx in range(N):
                 distanciaMin = float('inf')
                 for centroid_idx in range(len(self.centroides)):
@@ -134,6 +215,9 @@ class KMeans_Clustering_CUDA():
             for centroid_idx in centroides_asignados.keys():
                 if instance_idx in centroides_asignados[centroid_idx]:
                     self.labels.append(centroid_idx)
+
+
+
 
     def calcular_clusters(self):  # Etiqueta las instancias de inicialización
         pass
