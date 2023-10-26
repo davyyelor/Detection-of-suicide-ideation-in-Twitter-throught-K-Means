@@ -41,7 +41,7 @@ __global__ void minkowski_distance(float *a, float *b, float *result, int n, flo
 
 class KMeans_Clustering_CUDA():
 
-    def __init__(self, n_cluster=None, initialisation_method=None, iter_max=100, p_value=1):
+    def __init__(self, n_cluster=None, initialisation_method='random', iter_max=100, p_value=1):
         self.n_clusters = n_cluster
         self.method = initialisation_method
         self.iter_max = iter_max
@@ -81,15 +81,13 @@ class KMeans_Clustering_CUDA():
         # Instances:
         # [[ valores_palabra ],
         #  [ valores_palabra ]]
-        '''N = len(instances[0])'''
         N = instances.shape[0]
         instances = np.array(instances, dtype=np.float32)
         
 
         # Matriz de centroides, filas son el índice del centroide y columnas los valores para esa componente en cada centroide
-        if self.method == None:
-            self.centroides = random.sample( instances.tolist(), self.n_clusters ) #De la lista de instancias, cogemos N para inicializar los clusters
-            self.centroides = np.array(self.centroides, dtype=np.float32)
+        self.centroides = random.sample( instances.tolist(), self.n_clusters ) #De la lista de instancias, cogemos N para inicializar los clusters
+        self.centroides = np.array(self.centroides, dtype=np.float32)
 
         centroides_prev = None
         
@@ -173,7 +171,7 @@ class KMeans_Clustering_CUDA():
             ### REASIGNACIÓN DE INSTANCIAS CON SU CENTROIDE ###
             ###################################################
             centroides_asignados = {}
-            centroides_asignados = {i: [] for i in range(self.n_clusters)}
+            centroides_asignados = {i: [] for i in range(clusters)}
             
             for instance_idx in range(N):
                 distanciaMin = float('inf')
