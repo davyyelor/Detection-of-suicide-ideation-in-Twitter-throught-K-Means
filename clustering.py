@@ -314,7 +314,7 @@ if __name__=="__main__":
 
     labels, tweets = preprocesado(dfTweetsData)
 
-    opcion = "tf-idf"
+    opcion = "word-embedding"
 
     processed_features, vector = vectorizacion(tweets, opcion)
 
@@ -324,8 +324,8 @@ if __name__=="__main__":
 
     #obtenerPuntuaciones(vector, y_pred)
 
-    # type(vector.toarray()) = numpy.ndarray
-    # type(y_pred) = numpy.nbarray
+    # type(vector.toarray()) == numpy.ndarray
+    # type(y_pred) == numpy.nbarray
     # type(y_real.values) == numpy.ndarray
     
     # Calcular la matriz de confusión
