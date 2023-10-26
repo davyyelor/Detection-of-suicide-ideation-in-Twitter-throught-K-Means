@@ -13,14 +13,15 @@ from nltk.stem.porter import PorterStemmer
 import re
 from nltk.corpus import stopwords
 from nltk import WordNetLemmatizer, LancasterStemmer
-import emoji
+#import emoji
 import inflect as inflect
 import nltk
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
-from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score, f1_score
-from sklearn.metrics import silhouette_score
 import gensim
 from sklearn.cluster import KMeans
+
+import kMeans
+from kMeans import *
 
 
 ###########################################################################################################################################################################
@@ -145,7 +146,7 @@ def preprocesado(df_train):
 
     for words in range(0, len(features)):
         words = str(features[words])
-        words = emoji.demojize((words), delimiters=("", ""))
+        #words = emoji.demojize((words), delimiters=("", ""))
         # words = words.split(" ")[1:-1]
         # words = ' '.join([str(elem) for elem in words])
         words = remove_non_ascii(words)
@@ -180,6 +181,7 @@ def tfidf(processed_features):
     tfidf = tfidf_vectorizer.fit_transform(processed_features)
     return processed_features, tfidf_vectorizer
 
+
 def wordEmbeddings(processed_features):
     # Word embbeding
     tokenized_tweet = [text.split() for text in processed_features]  # tokenizing
@@ -196,17 +198,20 @@ def wordEmbeddings(processed_features):
         seed=34)
 
     model_w2v.train(tokenized_tweet, total_examples=len(processed_features), epochs=20)
-    model_w2v.wv.most_similar(positive="die")
+
+    # Ahora puedes hacer uso del modelo entrenado para obtener representaciones vectoriales de palabras o realizar tareas de procesamiento de texto con word embeddings.
+    # Por ejemplo, para encontrar palabras similares a "die":
+    similar_words = model_w2v.wv.most_similar(positive="die")
+    print(similar_words)
 
 def vectorizacion(tweets, opc):   #david
     #Hay que vectorizar el conjunto de datos de tal forma que los mensjes de twitter para que la información de los mensajes se pueda contar y sea lo más representativa posible
     #Precondición: La lista de mensajes ya procesada
     #Postcondición: Una lista con las palabras mas representativas y el numero de apariciones o lo que sea usando tf-idf, bow o embedding.
     if opc == "tf-idf":
-        tfidf_vectorizer = TfidfVectorizer(max_df=0.90, min_df=2, max_features=20000, stop_words='english')
-        tfidf_vectorizer.fit_transform(tweets)
-        tfidf_vectors = tfidf_vectorizer.transform(tweets)
-        return tweets, tfidf_vectors
+        processed_features, tfidf_vectorizer = tfidf(tweets)
+        tfidf_vectors = tfidf_vectorizer.transform(processed_features)
+        return processed_features, tfidf_vectors
     elif opc == "bow":
         processed_features,bow_vector = bow(tweets)  # Call the bow function and get the result
         return processed_features, bow_vector
@@ -234,10 +239,10 @@ def clustering(X,n):    #alberto              #IMPORTANTE: hay que probar con di
     #Postcondición: Devuelve un modelo K-Means con los mejores hiperparámetros y con las instancias calculadas vs label real
     modelo = KMeans(n_clusters=n, random_state=42)
     # Entrenar el modelo K-Means
-    
+    modelo.fit(X)
 
     # Obtener las etiquetas predichas por el modelo
-    y_pred = modelo.fit_predict(X)
+    y_pred = modelo.labels_
 
     return y_pred
 
@@ -245,7 +250,7 @@ def clustering(X,n):    #alberto              #IMPORTANTE: hay que probar con di
 
 
 
-def obtenerPuntuaciones(vector, labels):    ###bermu
+def obtenerPuntuaciones():    ###bermu
     #calcular las puntuaciones con diferentes métricas para ver la calidad de nuestro moodelo, si tiene capacidad de mejora o por el contrario ya podría clusterizar todo con un alto grado de confianza.
     #Precondición: Recibe el conjutno ya clasificado
     #Postcondición: Y devuelve las puntuaciones con las métricas más representativas.
@@ -318,36 +323,26 @@ if __name__=="__main__":
 
     processed_features, vector = vectorizacion(tweets, opcion)
 
+
+    print("Se ha vectorizado con", opcion)
+    print(vector)
+    print(vector.shape)
+
+    X = vector
     y_real = dfTweetsData['label']
-    n= 2
-    y_pred =clustering(vector,n)
+    n= 4
+    #y_pred =clustering(X,n)
+    #for etiqueta in y_pred:
+        #print(etiqueta)
 
-    #obtenerPuntuaciones(vector, y_pred)
+    algoritmo = kMeans.KMeans_Clustering(n_cluster=n)
+    algoritmo.ajustar(instances=X)
 
-    # type(vector.toarray()) == numpy.ndarray
-    # type(y_pred) == numpy.nbarray
-    # type(y_real.values) == numpy.ndarray
-    
-    # Calcular la matriz de confusión
-    confusion = confusion_matrix(y_real.values, y_pred)
-    print("Matriz de Confusión:")
-    print(confusion)
+    y_pred = algoritmo.labels
+    print(y_pred)
 
-    # Calcular la precisión
-    precision = precision_score(y_real.values, y_pred)
-    print(f"Precisión: {precision:.2f}")
 
-    # Calcular la exhaustividad (recall)
-    recall = recall_score(y_real.values, y_pred)
-    print(f"Exhaustividad (Recall): {recall:.2f}")
 
-    # Calcular la puntuación F1
-    f1 = f1_score(y_real.values, y_pred)
-    print(f"Puntuación F1: {f1:.2f}")
 
-    # Calcular la exactitud (accuracy)
-    accuracy = accuracy_score(y_real.values, y_pred)
-    print(f"Exactitud (Accuracy): {accuracy:.2f}")
-   
-  
+
 
