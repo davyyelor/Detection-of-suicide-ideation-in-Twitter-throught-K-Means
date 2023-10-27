@@ -5,6 +5,8 @@ import pycuda.driver as cuda
 import pycuda.autoinit
 from pycuda.compiler import SourceModule
 from scipy.spatial import distance as sp_distance
+import matplotlib.pyplot as plt
+from scipy.cluster.hierarchy import dendrogram, linkage
 
 # Define the CUDA kernel
 mod = SourceModule("""
@@ -71,6 +73,7 @@ class KMeans_Clustering_CUDA():
         return np.power(result[0], 1/p_value)
     
     def ajustar(self, instances):
+        self.instancias = instances
         if self.method == 'random':
             self.ajustar_random(instances)
         elif self.method == '2k':
@@ -145,11 +148,14 @@ class KMeans_Clustering_CUDA():
     def ajustar_2k(self, instances):
         from scipy.spatial.distance import cdist
         clusters = self.n_clusters
-        self.n_clusters *= 2
+        self.n_clusters *= 2 
+
+        #Generamos 2k clusters primero
         self.ajustar_random(instances)
         
-        selected_points = np.array([self.centroides[np.random.randint(len(self.centroides))]])  # Start with a random point
-        remaining_points = np.delete(self.centroides, 0, axis=0)  # Remove the selected point from the remaining points
+        #Seleccionamos los centroides que están más lejos entre si mismos
+        selected_points = np.array([self.centroides[np.random.randint(len(self.centroides))]]) 
+        remaining_points = np.delete(self.centroides, 0, axis=0) 
     
         while len(selected_points) < clusters:
             distances = cdist(selected_points, remaining_points, metric='minkowski')
@@ -158,6 +164,8 @@ class KMeans_Clustering_CUDA():
             remaining_points = np.delete(remaining_points, furthest_point_idx, axis=0)
         
 
+        #Una vez tenemos los centroides con mayor distancia entre ellos los usamos como centroides
+        #iniciales para calcular nuestro K-Means
         self.centroides = selected_points
 
         N = instances.shape[0]
@@ -214,7 +222,16 @@ class KMeans_Clustering_CUDA():
                 if instance_idx in centroides_asignados[centroid_idx]:
                     self.labels.append(centroid_idx)
 
-
+    def dibujar_dendrograma(self):
+        links = linkage(self.instancias, 'single')
+        print("\n\n\n Links \n\n\n")
+        print(links)
+        plt.figure(figsize=(10, 7))
+        dendrogram(links)
+        plt.title('Dendrograma')
+        plt.ylabel('Distancia')
+        plt.xlabel('Observaciones')
+        plt.show()
 
 
     def calcular_clusters(self):  # Etiqueta las instancias de inicialización
