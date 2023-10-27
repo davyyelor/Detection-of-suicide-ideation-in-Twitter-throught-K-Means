@@ -13,11 +13,19 @@ train  = pd.read_csv("suicidal_data.csv",sep=",", encoding='cp1252')
 
 
 
+###########################################################################################################################################################################
+#########################################################           ANÁLISIS DE DATOS       ##################################################################################
+###########################################################################################################################################################################
+
+
+
+
+
+
 
 ###########################################################################################################################################################################
 #########################################################           PREPROCESO       ##################################################################################
 ###########################################################################################################################################################################
-
 
 def remove_pattern(input_txt, pattern):
     r = re.findall(pattern, input_txt)
@@ -301,7 +309,7 @@ tfidf_array = tfidf_matrix.toarray()
 
 # Luego, instanciamos la clase KMeans_Clustering y ajustamos el modelo a tus datos.
 # Debes ajustar el número de clusters, el método de inicialización y otros parámetros según tu preferencia.
-algoritmo = KMeans_Clustering(n_cluster=2, initialisation_method='random', iter_max=100, p_value=2)
+algoritmo = KMeans_Clustering(n_cluster=2, iter_max=100, p_value=2)
 algoritmo.ajustar(instances=tfidf_array)
 
 # Ahora que el modelo K-Means ha sido ajustado, puedes obtener las etiquetas predichas para tus datos.
@@ -312,13 +320,71 @@ predicted_labels = algoritmo.labels
 print("Etiquetas predichas:", predicted_labels)
 
 
+
+############################################################################### Puntuacion
+from sklearn.metrics import confusion_matrix
+import seaborn as sns
+
+# Visualizar la matriz de confusión con el número de instancias
+# El atributo generado por K-means es int, hay que pasarlos a string
+to_string = lambda x : str(x)
+# Obtener matriz de confusión Class to clustering eval
+cm = confusion_matrix(np.vectorize(to_string)(predicted_labels), np.vectorize(to_string)(train['label']))
+# Mapa de calor a partir de la matriz de confusion sin números
+ax = sns.heatmap(cm, annot=False, cmap="Blues")
+plt.xlabel('Clase Real')
+plt.ylabel('Cluster')
+plt.title('Matriz de Confusión sin relabelización')
+
+#############Renombrar labels
+# To-Do
+# Re-asingar labels para que la matriz de confusión cobre más sentido en la diagonal
+# Reassign cluster labels based on the most common true labels within each cluster
+cluster_to_class = {}
+# Reasignar etiquetas de clúster basadas en las etiquetas verdaderas más comunes dentro de cada clúster
+cluster_to_class = {}
+for cluster_id in range(2):
+    cluster_indices = np.where(predicted_labels == cluster_id)[0]
+    true_labels = train['label'].iloc[cluster_indices].values
+    most_common_label = np.bincount(true_labels).argmax()
+    cluster_to_class[cluster_id] = most_common_label
+
+# Mapear las etiquetas de clúster a etiquetas de clase
+reassigned_labels = np.vectorize(cluster_to_class.get)(predicted_labels)
+
+# Calculate the confusion matrix with the reassigned labels
+cm = confusion_matrix(predicted_labels, reassigned_labels)
+total_correct = np.trace(cm)  # Suma de valores en la diagonal principal
+total_samples = np.sum(cm)    # Suma de todos los valores en la matriz de confusión
+# Create a heatmap
+plt.xlabel('Clase Real')
+plt.ylabel('Cluster')
+ax = sns.heatmap(cm, annot=True, fmt="d", cmap="Blues")
+plt.title("Matriz de confusión con las etiquetas ajustadas")
+plt.show()
+
+# Calculate the confusion matrix with the reassigned labels
+cm = confusion_matrix(predicted_labels, reassigned_labels)
+total_correct = np.trace(cm)  # Suma de valores en la diagonal principal
+total_samples = np.sum(cm)    # Suma de todos los valores en la matriz de confusión
+
+# Calcular el número total de clasificaciones incorrectas
+total_incorrect = total_samples - total_correct
+
+# Calcular la tasa de error
+error_rate = total_incorrect / total_samples
+
+print("Tasa de Error:", error_rate)
+
+
+
 ####################################################################################KMEANS BOW
 # Convierte la matriz TF-IDF a un formato adecuado para tu KMeans
 bow_array = bow.toarray()
 
 # Luego, instanciamos la clase KMeans_Clustering y ajustamos el modelo a tus datos.
 # Debes ajustar el número de clusters, el método de inicialización y otros parámetros según tu preferencia.
-algoritmo = KMeans_Clustering(n_cluster=2, initialisation_method='random', iter_max=100, p_value=2)
+algoritmo = KMeans_Clustering(n_cluster=2, iter_max=100, p_value=2)
 algoritmo.ajustar(instances=bow_array)
 
 # Ahora que el modelo K-Means ha sido ajustado, puedes obtener las etiquetas predichas para tus datos.
@@ -337,7 +403,7 @@ wd_array = train_w2v
 
 # Luego, instanciamos la clase KMeans_Clustering y ajustamos el modelo a tus datos.
 # Debes ajustar el número de clusters, el método de inicialización y otros parámetros según tu preferencia.
-algoritmo = KMeans_Clustering(n_cluster=2, initialisation_method='random', iter_max=100, p_value=2)
+algoritmo = KMeans_Clustering(n_cluster=2, iter_max=100, p_value=2)
 algoritmo.ajustar(instances=wd_array)
 
 # Ahora que el modelo K-Means ha sido ajustado, puedes obtener las etiquetas predichas para tus datos.
@@ -346,3 +412,7 @@ predicted_labels = algoritmo.labels
 
 # Imprime las etiquetas predichas
 print("Etiquetas predichas:", predicted_labels)
+
+
+
+########################################################################################Puntuacion
