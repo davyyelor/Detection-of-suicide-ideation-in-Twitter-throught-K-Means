@@ -6,40 +6,6 @@ import matplotlib.pyplot as plt
 from scipy.cluster.hierarchy import dendrogram, linkage
 import joblib
 
-# Define the CUDA kernel
-mod = SourceModule("""
-__global__ void minkowski_distance(float *a, float *b, float *result, int n, float p) {
-    extern __shared__ float sdata[];
-
-    int idx = threadIdx.x + blockIdx.x * blockDim.x;
-    float sum = 0;
-
-    // Compute the local sum for this thread
-    if (idx < n) {
-        float diff = fabs(a[idx] - b[idx]);
-        sum += powf(diff, p);
-    }
-
-    // Load local sum into shared memory and synchronize
-    sdata[threadIdx.x] = sum;
-    __syncthreads();
-
-    // Do the reduction in shared memory
-    for (unsigned int s = blockDim.x / 2; s > 0; s >>= 1) {
-        if (threadIdx.x < s) {
-            sdata[threadIdx.x] += sdata[threadIdx.x + s];
-        }
-        __syncthreads();
-    }
-
-    // Write the block's result to global memory
-    if (threadIdx.x == 0) {
-        atomicAdd(result, sdata[0]);
-    }
-}
-""")
-
-
 class KMeans_Clustering_CUDA():
 
     def __init__(self, n_cluster=None, initialisation_method='random', iter_max=100, p_value=1, eType='standard'):
