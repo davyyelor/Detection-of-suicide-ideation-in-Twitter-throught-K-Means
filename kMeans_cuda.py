@@ -43,11 +43,12 @@ __global__ void minkowski_distance(float *a, float *b, float *result, int n, flo
 
 class KMeans_Clustering_CUDA():
 
-    def __init__(self, n_cluster=None, initialisation_method='random', iter_max=100, p_value=1):
+    def __init__(self, n_cluster=None, initialisation_method='random', divisiones=2, iter_max=100, p_value=1):
         self.n_clusters = n_cluster
         self.method = initialisation_method
         self.iter_max = iter_max
         self.p_value = p_value
+        self.divisiones = divisiones
         # Devolver una matriz que sea un vector de vectores (n_clusters vectores que contienen las coordenadas de los centros)
 
     def gpu_minkowski_distance(self, vec1, vec2, p_value):
@@ -79,6 +80,9 @@ class KMeans_Clustering_CUDA():
         elif self.method == '2k':
             print("Algoritmo inicializando 2k clusters")
             self.ajustar_2k(instances)
+        elif self.method == 'divisiones':
+            print("Algoritmo inicializado dividiendo el espacio")
+            self.ajustar_division(instances, self.divisiones)
 
     def ajustar_random(self, instances):  # Itera el algoritmo de KMeans, calculando los centros (La matriz)
         # Instances:
@@ -233,6 +237,32 @@ class KMeans_Clustering_CUDA():
         plt.xlabel('Observaciones')
         plt.show()
 
+    def guardar_modelo(self, filename):
+        # Crea un diccionario con los atributos del modelo que deseas guardar
+        import joblib
+        model_data = {
+            "n_clusters": self.n_clusters,
+            "centroides": self.centroides
+            # Puedes agregar más atributos si es necesario
+        }
 
-    def calcular_clusters(self):  # Etiqueta las instancias de inicialización
-        pass
+        # Utiliza joblib para guardar el modelo en un archivo .sav
+        joblib.dump(model_data, filename)
+
+    def ajustar_division(instances, k):
+        # Encuentra los límites del espacio de características
+        #k son el número de subregiones
+        min_values = np.min(instances, axis=0)
+        max_values = np.max(instances, axis=0)
+
+        # Divide el espacio en k subregiones
+        subregions = []
+        for i in range(k):
+            subregion = []
+            for j in range(len(min_values)):
+                # Calcula el centro de la subregión en cada dimensión
+                subregion_center = min_values[j] + (i + 0.5) * (max_values[j] - min_values[j]) / k
+                subregion.append(subregion_center)
+            subregions.append(subregion)
+
+        return np.array(subregions)
