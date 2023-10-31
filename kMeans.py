@@ -30,6 +30,7 @@ class KMeans_Clustering():
 
         return distance ** (1 / p_value)
 
+    '''
     def gpu_minkowski_distance(self, vec1, vec2, p_value):
         import pycuda.driver as cuda
         import pycuda.autoinit
@@ -87,6 +88,7 @@ class KMeans_Clustering():
         result = np.empty(1, dtype=np.float32)
         cuda.memcpy_dtoh(result, result_gpu)
         return np.power(result[0], 1 / p_value)
+    '''
 
     def ajustar(self, instances):
         self.instancias = instances
@@ -274,7 +276,7 @@ class KMeans_Clustering():
             "centroides": self.centroides
             # Puedes agregar más atributos si es necesario
         }
-
+        print("Modelo guardado con: ", self.n_clusters, "y con los centroides: ", self.centroides)
         # Utiliza joblib para guardar el modelo en un archivo .sav
         joblib.dump(model_data, 'modelo.sav')
 
@@ -287,6 +289,8 @@ class KMeans_Clustering():
             print("El modelo no se ha cargado correctamente.")
             return None
 
+        print("Los clusters del mejor modelo son:", self.n_clusters, "y los centroides son:,", self.centroides)
+
         # Calcular distancias y asignar instancias a centroides
         print("Asignando ")
         assigned_clusters = []
@@ -294,7 +298,7 @@ class KMeans_Clustering():
             min_distance = float('inf')
             assigned_centroid = -1
             for centroid_idx, centroid in enumerate(self.centroides):
-                distance = self.gpu_minkowski_distance(instance, centroid, self.p_value)
+                distance = self.minkowski_distance(instance, centroid, self.p_value)
                 if distance < min_distance:
                     min_distance = distance
                     assigned_centroid = centroid_idx
