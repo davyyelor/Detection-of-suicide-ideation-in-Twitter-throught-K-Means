@@ -166,6 +166,7 @@ class KMeans_Clustering_CUDA():
                 print("Número de instancias para cluster ", centroid_idx, "\t", num_inst)
             print("======================================")
 
+        self.centroides_asignados = centroides_asignados
         self.labels = []
         for instance_idx in range(N):
             for centroid_idx in centroides_asignados.keys():
@@ -263,9 +264,18 @@ class KMeans_Clustering_CUDA():
         plt.xlabel('Observaciones')
         plt.show()
 
-
-    def calcular_clusters(self):  # Etiqueta las instancias de inicialización
-        pass
+    def computar_inercia(self):
+        inercia = 0
+        for cluster_idx, cluster in enumerate(self.centroides_asignados):
+            centroid = self.centroides[cluster_idx]
+            for instance_idx in cluster:
+                instance = self.instancias[instance_idx]
+                if self.type == 'CUDA':
+                    distance = self.gpu_minkowski_distance(instance, centroid, self.p_value) ** 2
+                else:
+                    distance = self.minkowski_distance(instance, centroid, self.p_value) ** 2
+                inercia += distance
+        return inercia
 
     def guardar_modelo(self):
         # Crea un diccionario con los atributos del modelo que deseas guardar
