@@ -319,7 +319,7 @@ class KMeans_Clustering():
 if __name__ == '__main__':
     #############################################Test
     nuevos_mensajes = ["This is a test message", "ANother message to send to one of my little friends, I hope I´ll be seeing him soon", "i shouldnt want to kill myself i have so many advantages in life all of my immediate family is alive and still involved in my life i have several friends who i frequently talk to i make more than enough money to live on easily but every night i go home and drink hoping i will forget about how much i just want it all to end every single moment that i am sober i spend thinking that people might actually see me for who i really am a lazy waste of space who lucked into success and wheni amdrunk i worry that people will find out thati am trying to slowly kill myself with alcohol fuck i always thought if i could just be successful i would be happy well i am not"]
-    opcion = 'w2v'
+    opcion = 'd2v'
 
     print("Se van a preprocesar y vectorizar las nuevas instancias con: ", opcion)
 
