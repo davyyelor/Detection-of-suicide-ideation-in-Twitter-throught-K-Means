@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from scipy.cluster.hierarchy import dendrogram, linkage
 import joblib
 
+from clasificarNuevaInstancia import *
 class KMeans_Clustering():
 
     def __init__(self, n_cluster=None, initialisation_method='random', iter_max=100, p_value=1, eType='standard'):
@@ -269,7 +270,7 @@ class KMeans_Clustering():
     def calcular_clusters(self):  # Etiqueta las instancias de inicialización
         pass
 
-    def guardar_modelo(self):
+    def guardar_modelo(self, filename):
         # Crea un diccionario con los atributos del modelo que deseas guardar
         model_data = {
             "n_clusters": self.n_clusters,
@@ -278,33 +279,14 @@ class KMeans_Clustering():
         }
         print("Modelo guardado con: ", self.n_clusters, "y con los centroides: ", self.centroides)
         # Utiliza joblib para guardar el modelo en un archivo .sav
-        joblib.dump(model_data, 'modelo.sav')
+        joblib.dump(model_data, filename)
 
-    def cargar_modelo_y_asignar_clusters(self, instancias):
-        model_data = joblib.load('modelo.sav')
+    def cargar_modelo(self, model_path):
+        # Carga el modelo guardado utilizando joblib
+        model_data = joblib.load(model_path)
+
         self.n_clusters = model_data["n_clusters"]
         self.centroides = model_data["centroides"]
-
-        if self.centroides is None:
-            print("El modelo no se ha cargado correctamente.")
-            return None
-
-        print("Los clusters del mejor modelo son:", self.n_clusters, "y los centroides son:,", self.centroides)
-
-        # Calcular distancias y asignar instancias a centroides
-        print("Asignando ")
-        assigned_clusters = []
-        for instance in instancias:
-            min_distance = float('inf')
-            assigned_centroid = -1
-            for centroid_idx, centroid in enumerate(self.centroides):
-                distance = self.minkowski_distance(instance, centroid, self.p_value)
-                if distance < min_distance:
-                    min_distance = distance
-                    assigned_centroid = centroid_idx
-            assigned_clusters.append(assigned_centroid)
-
-        return assigned_clusters
 
 
 
@@ -325,3 +307,50 @@ class KMeans_Clustering():
             subregions.append(subregion)
 
         return np.array(subregions)
+
+    def calcular_inercia(self):
+        inercia = 0
+        for i in range(self.n_clusters):
+            instances_in_cluster = self.instancias[np.array(self.labels) == i]
+            centroid = self.centroides[i]
+            distances = np.sum((instances_in_cluster - centroid) ** 2)
+            inercia += distances
+        return inercia
+
+
+
+if __name__ == '__main__':
+    #############################################Test
+    nuevos_mensajes = ["This is a test message", "ANother message to send to one of my little friends, I hope I´ll be seeing him soon", "i shouldnt want to kill myself i have so many advantages in life all of my immediate family is alive and still involved in my life i have several friends who i frequently talk to i make more than enough money to live on easily but every night i go home and drink hoping i will forget about how much i just want it all to end every single moment that i am sober i spend thinking that people might actually see me for who i really am a lazy waste of space who lucked into success and wheni amdrunk i worry that people will find out thati am trying to slowly kill myself with alcohol fuck i always thought if i could just be successful i would be happy well i am not"]
+    opcion = 'w2v'
+
+    print("Se van a preprocesar y vectorizar las nuevas instancias con: ", opcion)
+
+    nuevoArray = preproceso(nuevos_mensajes, opcion)
+
+    print("vectorizado completado con ", opcion)
+
+    modelo = KMeans_Clustering(n_cluster=2)
+    modelo.cargar_modelo('modelo.sav')
+
+    modelo.labels = modelo.ajustar(nuevoArray)
+
+    print(modelo.labels)
+
+    ########################################## Calcular Punto de codo
+    inercias = []
+    for k in range(1, 4):
+        modelo = KMeans_Clustering(n_cluster=k, iter_max=20, p_value=2)
+        modelo.ajustar(nuevoArray)
+        inercia = modelo.calcular_inercia()
+        inercias.append(inercia[0])
+        print("La inercia para", k, "clusters es", inercia[0])
+
+    # Plot the inercia
+    plt.plot(range(1, 4), inercias, marker='o')
+    plt.title('Método del Codo')
+    plt.xlabel('Número de Clusters')
+    plt.ylabel('Inercia')
+    plt.show()
+
+
