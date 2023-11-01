@@ -256,14 +256,11 @@ class KMeans_Clustering():
                     self.labels.append(centroid_idx)
 
     def dibujar_dendrograma(self):
-        links = linkage(self.instancias, 'single')
-        print("\n\n\n Links \n\n\n")
-        print(links)
-        plt.figure(figsize=(10, 7))
-        dendrogram(links)
-        plt.title('Dendrograma')
-        plt.ylabel('Distancia')
-        plt.xlabel('Observaciones')
+        linkage_matrix = linkage(data, method='ward')
+        dendrogram(linkage_matrix, orientation="top")
+        plt.title("Dendrograma de Clusters")
+        plt.xlabel("Tweets")
+        plt.ylabel("Distancia")
         plt.show()
 
 
