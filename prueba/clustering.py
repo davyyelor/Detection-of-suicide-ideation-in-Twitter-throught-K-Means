@@ -13,12 +13,16 @@ from nltk.stem.porter import PorterStemmer
 import re
 from nltk.corpus import stopwords
 from nltk import WordNetLemmatizer, LancasterStemmer
-import emoji
+#import emoji
 import inflect as inflect
 import nltk
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 import gensim
 from sklearn.cluster import KMeans
+from sklearn.decomposition import PCA, TruncatedSVD
+
+import kMeans
+from kMeans import *
 
 
 ###########################################################################################################################################################################
@@ -60,127 +64,85 @@ def analisisDeDato(tweets):  ##david
     print(tweets[(tweets['label']=="si")].head(5))
     print()
     print("Las instancias están repartidas en las dos clases de la siguiente forma:")
-    print(dfTweetsData['label'].value_counts(), end="\n")
+    print(tweets['label'].value_counts(), end="\n")
     print()
 
 
 
 ###################################################################### PREPROCESO #############################################################
-def remove_non_ascii(word):
-    """Se eliminan todas las palabras que no este en formato ascii"""
-    new_words = []
-    new_word = unicodedata.normalize('NFKD', word).encode('ascii', 'ignore').decode('utf-8', 'ignore')
-    new_words.append(new_word)
-    return new_words
+def remove_pattern(input_txt, pattern):
+    r = re.findall(pattern, input_txt)
+    for i in r:
+        input_txt = re.sub(i, '', input_txt)
 
+    return input_txt
 
-def to_lowercase(words):
-    """Todas las letras se transforman en minuscula"""
-    new_words = []
-    for word in words:
-        new_word = word.lower()
-        new_words.append(new_word)
-    return new_words
-
-
-def remove_punctuation(words):
-    """Se borra la puntuacion de las palabras"""
-    new_words = []
-    for word in words:
-        new_word = re.sub(r'[^\w\s]', '', word)
-        if new_word != '':
-            new_words.append(new_word)
-    return new_words
-
-
-def replace_numbers(words):
-    """Se convierten los numeros en su representacion con palabras"""
-    p = inflect.engine()
-    new_words = []
-    for word in words:
-        if word.isdigit():
-            new_word = p.number_to_words(word)
-            new_words.append(new_word)
-        else:
-            new_words.append(word)
-    return new_words
-
-
-def remove_stopwords(words):
-    """Se eliminan las stopwords"""
-    stop_words = set(stopwords.words('english'))
-    new_words = []
-    for word in words:
-        if word not in stop_words:
-            new_words.append(word)
-    return new_words
-
-
-def stem_words(words):
-    """Stem words in list of tokenized words"""
-    stemmer = LancasterStemmer()
-    stems = []
-    for word in words:
-        stem = stemmer.stem(word)
-        stems.append(stem)
-    return stems
-
-
-def lemmatize_verbs(words):
-    """Lemmatize verbs in list of tokenized words"""
-    lemmatizer = WordNetLemmatizer()
-    lemmas = []
-    for word in words:
-        lemma = lemmatizer.lemmatize(word, pos='v')
-        lemmas.append(lemma)
-    return lemmas
-
-
-def preprocesado(df_train):
-    features = df_train['tweet'].values.tolist()
-    labels = df_train['label'].values
-    processed_features = []
-
-    for words in range(0, len(features)):
-        words = str(features[words])
-        words = emoji.demojize((words), delimiters=("", ""))
-        # words = words.split(" ")[1:-1]
-        # words = ' '.join([str(elem) for elem in words])
-        words = remove_non_ascii(words)
-        words = to_lowercase(words)
-        words = remove_punctuation(words)
-        words = replace_numbers(words)
-        words = remove_stopwords(words)
-        words = lemmatize_verbs(words)
-        words = stem_words(words)
-        words = ' '.join([str(elem) for elem in words])
-        processed_features.append(words)
-    return labels, processed_features
+def remove_stopwords(text,stopword):
+  text = [word for word in text if word not in stopword]
+  return text
 
 
 
+def preproceso(train):
+    print('Dataset size:', train.shape)
+    print('columns are:', train.columns)
+    length_train = train['tweet'].str.len()
+    train['tidy_tweet'] = np.vectorize(remove_pattern)(train['tweet'], "@[\w]*")
 
+    train['tidy_tweet'] = train['tidy_tweet'].str.replace("[^a-zA-Z#]", " ")
 
+    train['tidy_tweet'] = train['tidy_tweet'].apply(lambda x: ' '.join([w for w in x.split() if len(w) > 2]))
 
+    tokenized_tweet = train['tidy_tweet'].apply(lambda x: x.split())
+    tokenized_tweet.head()
+
+    from nltk.stem.porter import *
+    stemmer = PorterStemmer()
+
+    tokenized_tweet = tokenized_tweet.apply(lambda x: [stemmer.stem(i) for i in x])  # stemming
+    tokenized_tweet.head()
+
+    for i in range(len(tokenized_tweet)):
+        tokenized_tweet[i] = ' '.join(tokenized_tweet[i])
+
+    train['tidy_tweet'] = tokenized_tweet
+
+    import nltk.corpus
+
+    stopword = nltk.corpus.stopwords.words('english')
+    stopword.extend(['fuck', 'shit'])
+
+    # combi['tidy_tweet'] = combi['tidy_tweet'].apply(lambda x: remove_stopwords(x)) # stemming
+    # combi.head()
+
+    train['tidy_tweet'] = train['tidy_tweet'].apply(
+        lambda x: ' '.join([word for word in x.split() if word not in (stopword)]))
+
+    # visualize all the words our data using the wordcloud plot
+    all_words = ' '.join([text for text in train['tidy_tweet']])
+    return all_words, train
 
 ##################################################################### VECTORIZACION ###############################################################
 
-def bow (processed_features):
-    bow_vectorizer = CountVectorizer(max_df=0.90, min_df=2, max_features=20000, stop_words='english')
+def bow (train):
+    bow_vectorizer = CountVectorizer(max_df=0.90, min_df=2, max_features=1000, stop_words='english')
     # bag-of-words feature matrix
-    bow = bow_vectorizer.fit_transform(processed_features)
+    bow = bow_vectorizer.fit_transform(train['tidy_tweet'])
     bow.shape
     return processed_features,bow
 
-def tfidf(processed_features):
-    tfidf_vectorizer = TfidfVectorizer(max_df=0.90, min_df=2, max_features=20000, stop_words='english')
+def tfidf(train):
+    tfidf_vectorizer = TfidfVectorizer(max_df=0.90, min_df=2, max_features=1000, stop_words='english')
     # TF-IDF feature matrix
-    tfidf = tfidf_vectorizer.fit_transform(processed_features)
+    tfidf_matrix = tfidf_vectorizer.fit_transform(train['tidy_tweet'])
     return processed_features, tfidf_vectorizer
 
-def wordEmbeddings(processed_features):
+
+
+
+def wordEmbeddings(train):
     # Word embbeding
-    tokenized_tweet = [text.split() for text in processed_features]  # tokenizing
+    tokenized_tweet = train['tidy_tweet'].apply(lambda x: x.split())  # tokenizing
 
     model_w2v = gensim.models.Word2Vec(
         tokenized_tweet,
@@ -193,8 +155,40 @@ def wordEmbeddings(processed_features):
         workers=2,  # no.of cores
         seed=34)
 
-    model_w2v.train(tokenized_tweet, total_examples=len(processed_features), epochs=20)
-    model_w2v.wv.most_similar(positive="die")
+    model_w2v.train(tokenized_tweet, total_examples=len(train['tidy_tweet']), epochs=20)
+
+    print(model_w2v.wv.most_similar(positive="die"))
+
+    print(model_w2v.wv.most_similar(positive="suicid"))
+
+    model_w2v.wv.get_vector('suicid')
+
+    wordvec_arrays = np.zeros((len(tokenized_tweet), 200))
+
+    for i in range(len(tokenized_tweet)):
+        wordvec_arrays[i, :] = word_vector(tokenized_tweet[i], 200)
+
+    wordvec_df = pd.DataFrame(wordvec_arrays)
+    wordvec_df.shape
+
+    from tqdm import tqdm
+    tqdm.pandas(desc="progress-bar")
+    from gensim.models.doc2vec import TaggedDocument
+
+def word_vector(tokens, size):
+    vec = np.zeros(size).reshape((1, size))
+    count = 0.
+    for word in tokens:
+        try:
+            vec += model_w2v.wv.get_vector(word).reshape((1, size))
+            count += 1.
+        except KeyError:  # handling the case where the token is not in vocabulary
+
+            continue
+    if count != 0:
+        vec /= count
+    return vec
+
 
 def vectorizacion(tweets, opc):   #david
     #Hay que vectorizar el conjunto de datos de tal forma que los mensjes de twitter para que la información de los mensajes se pueda contar y sea lo más representativa posible
@@ -219,25 +213,49 @@ def vectorizacion(tweets, opc):   #david
 
 
 
-def redimensionar():     #albert
+def redimensionar(X_train):     #albert
     ##comprobar que numero de dimensiones es mejor para esta practica, cual ofrece más información o si se pierde al redimensionar.
     #Precondición: Recibe los mensajes vectorizados
     #Postcondición: devuelve y redimensiona si procediese
-    pass
+    print('Dim originally: ', X_train.shape)
+    # Reducir las dimensiones para visualizarlas: PCA
+    svd = TruncatedSVD(n_components=5)
+    X_train_PCAspace = svd.fit_transform(X_train)
+    print('Dim after TruncatedSVD: ', X_train_PCAspace.shape)
+    return X_train_PCAspace
 
 def clustering(X,n):    #alberto              #IMPORTANTE: hay que probar con distintos clusters, en vez de dos clusters que seán si o no, por ejemplo 5 que sean, si o si, muy posible, posible, poco posible, imposible
     #Utilizar K-Means sin usar ninguna librería para poder clasificar las instancias actuales y futuras.
     #Precondición: Recibe los tweets vectorizados y redimensionados
     #Postcondición: Devuelve un modelo K-Means con los mejores hiperparámetros y con las instancias calculadas vs label real
-    modelo = KMeans(n_clusters=n, random_state=42)
-    # Entrenar el modelo K-Means
-    modelo.fit(X)
+    pass
 
-    # Obtener las etiquetas predichas por el modelo
-    y_pred = modelo.labels_
+def palabrasRepresentativas(all_words):
+    from wordcloud import WordCloud
+    wordcloud = WordCloud(width=800, height=500, random_state=21, max_font_size=110).generate(all_words)
 
-    return y_pred
+    plt.figure(figsize=(10, 7))
+    plt.imshow(wordcloud, interpolation="bilinear")
+    plt.axis('off')
+    plt.show()
 
+    # Non-suicide
+    normal_words = ' '.join([text for text in train['tidy_tweet'][train['label'] == 0]])
+
+    wordcloud = WordCloud(width=800, height=500, random_state=21, max_font_size=110).generate(normal_words)
+    plt.figure(figsize=(10, 7))
+    plt.imshow(wordcloud, interpolation="bilinear")
+    plt.axis('off')
+    plt.show()
+
+    # Suicide
+    negative_words = ' '.join([text for text in train['tidy_tweet'][train['label'] == 1]])
+    wordcloud = WordCloud(width=800, height=500,
+                          random_state=21, max_font_size=110).generate(negative_words)
+    plt.figure(figsize=(10, 7))
+    plt.imshow(wordcloud, interpolation="bilinear")
+    plt.axis('off')
+    plt.show()
 
 
 
@@ -277,37 +295,80 @@ def clasificarInstancia():      ##bermudez
 #########################################################           Inicialización         ###############################################################
 ###########################################################################################################################################################################
 if __name__=="__main__":
-    dfTweetsData = []
-    dfTweetsData = pd.read_csv("suicidal_data.csv",sep=",",encoding='cp1252')
+    train = pd.read_csv("../suicidal_data.csv", sep=",", encoding='cp1252')
+
+    copyTrain = train
 
     # Mapear los valores en la columna 'label'
-    dfTweetsData['label'] = dfTweetsData['label'].map({0: 'no', 1: 'si'})
+    copyTrain['label'] = copyTrain['label'].map({0: 'no', 1: 'si'})
 
     # to check out what we are going to be working with
-    #dfTweetsData.info()
+    copyTrain.info()
 
-    #barPlotInstanciasPorClase(dfTweetsData)
+    barPlotInstanciasPorClase(copyTrain)
 
-    #analisisDeDato(dfTweetsData)
+    analisisDeDato(copyTrain)
 
+    all_words, train = preproceso(copyTrain)
 
-    labels, tweets = preprocesado(dfTweetsData)
+    opcion = "bow"
 
-    opcion = "tf-idf"
+    palabrasRepresentativas(all_words)
 
-    processed_features, vector = vectorizacion(tweets, opcion)
+    processed_features, vector = vectorizacion(train, opcion)
 
+    redimensioned_vect = redimensionar(vector)
 
     print("Se ha vectorizado con", opcion)
     print(vector)
     print(vector.shape)
 
     X = vector
-    y_real = dfTweetsData['label']
-    n= 4
-    y_pred =clustering(X,n)
-    for etiqueta in y_pred:
-        print(etiqueta)
+    y_real = train['label']
+
+
+
+    n= 2
+    #y_pred =clustering(X,n)
+    #for etiqueta in y_pred:
+        #print(etiqueta)
+
+    print(redimensioned_vect)
+
+    algoritmo = kMeans.KMeans_Clustering(n_cluster=n)
+
+    import matplotlib.pyplot as plt
+
+    # Asume que "X" contiene tus vectores de características reducidos a dos dimensiones
+    # Asume que "y_real" contiene las etiquetas reales
+
+    # Etiquetas de las clases
+    classes = ['si', 'no']
+
+    # Colores para las clases
+    colors = ['r', 'b']
+
+    # Crear un gráfico de dispersión
+    plt.figure(figsize=(8, 6))
+    for i in range(len(classes)):
+        class_idx = y_real[y_real == classes[i]].index
+        plt.scatter(X[class_idx, 0], redimensioned_vect[class_idx, 1], c=colors[i], label=classes[i])
+
+    plt.xlabel('Dimensión 1')
+    plt.ylabel('Dimensión 2')
+    plt.legend()
+    plt.title('Tweets Vectorizados en 2D')
+
+    plt.show()
+
+    algoritmo.ajustar(instances=redimensioned_vect)
+
+
+
+    y_pred = algoritmo.labels
+    print(y_pred)
+
+
 
 
 
